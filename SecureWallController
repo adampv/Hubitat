@@ -1,0 +1,332 @@
+/**
+ *  Copyright 2018 AdamV
+ *
+ *  Licensed under the Apache License, Version 2.0 (the "License"); you may not use this file except
+ *  in compliance with the License. You may obtain a copy of the License at:
+ *
+ *      http://www.apache.org/licenses/LICENSE-2.0
+ *
+ *  Unless required by applicable law or agreed to in writing, software distributed under the License is distributed
+ *  on an "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the License
+ *  for the specific language governing permissions and limitations under the License.
+ *
+ *
+ *  Version 1.0
+ *  Author: AdamV
+ *  Date: 2018-12-05
+ *
+ */
+ 
+metadata {
+	definition (name: "Secure Wall Controllers & Key Fobs (Z-Wave.me, Popp & Devolo)", namespace: "Z-Wave.me", author: "AdamV") {
+
+		capability "PushableButton"
+		capability "HoldableButton"
+		capability "DoubleTapableButton"
+		capability "ReleasableButton"
+        capability "Battery"
+		capability "Configuration" 
+        capability "Health Check"
+        
+		fingerprint deviceId: "0x1801", inClusters: "0x5E, 0x70, 0x85, 0x2D, 0x8E, 0x80, 0x84, 0x8F, 0x5A, 0x59, 0x5B, 0x73, 0x86, 0x72", outClusters: "0x20, 0x5B, 0x26, 0x27, 0x2B, 0x60"
+   		fingerprint deviceId: "0x1202", inClusters: "0x5E, 0x8F, 0x73, 0x98, 0x86, 0x72, 0x70, 0x85, 0x2D, 0x8E, 0x80, 0x84, 0x5A, 0x59, 0x5B", outClusters:  "0x20, 0x5B, 0x26, 0x27, 0x2B, 0x60"												
+   }
+
+}
+
+ def configure() {
+	 
+	sendEvent(name:"numberOfButtons", value:4)
+    
+	log.info "Resetting Sensor Parameters to Hubitat Compatible Defaults"
+	def cmds = []
+    cmds +=  zwave.associationV1.associationSet(groupingIdentifier: 1, nodeId: zwaveHubNodeId).format()
+    cmds +=  zwave.associationV1.associationSet(groupingIdentifier: 2, nodeId: zwaveHubNodeId).format()
+    cmds +=  zwave.associationV1.associationSet(groupingIdentifier: 3, nodeId: zwaveHubNodeId).format()
+    cmds +=  zwave.associationV1.associationSet(groupingIdentifier: 4, nodeId: zwaveHubNodeId).format()
+    cmds +=  zwave.associationV1.associationSet(groupingIdentifier: 5, nodeId: zwaveHubNodeId).format()
+	cmds +=  zwave.configurationV1.configurationSet(configurationValue: [0], parameterNumber: 1, size: 1).format()
+    cmds +=  zwave.configurationV1.configurationSet(configurationValue: [0], parameterNumber: 2, size: 1).format()
+    cmds +=  zwave.configurationV1.configurationSet(configurationValue: [4], parameterNumber: 11, size: 1).format()
+    cmds +=  zwave.configurationV1.configurationSet(configurationValue: [4], parameterNumber: 12, size: 1).format()
+    cmds +=  zwave.configurationV1.configurationSet(configurationValue: [4], parameterNumber: 13, size: 1).format()
+    cmds +=  zwave.configurationV1.configurationSet(configurationValue: [4], parameterNumber: 14, size: 1).format()
+    cmds +=  zwave.configurationV1.configurationSet(configurationValue: [1], parameterNumber: 21, size: 1).format()
+    cmds +=  zwave.configurationV1.configurationSet(configurationValue: [0], parameterNumber: 22, size: 1).format()
+    cmds +=  zwave.configurationV1.configurationSet(configurationValue: [2], parameterNumber: 24, size: 1).format()
+    cmds +=  zwave.configurationV1.configurationSet(configurationValue: [1], parameterNumber: 25, size: 1).format()
+    cmds +=  zwave.configurationV1.configurationSet(configurationValue: [1], parameterNumber: 30, size: 1).format()
+    cmds +=  zwave.wakeUpV2.wakeUpIntervalSet(seconds:86400, nodeid:zwaveHubNodeId).format()
+    cmds +=  zwave.batteryV1.batteryGet().format()
+    
+    if (cmds) return delayBetween(cmds, 500)
+}
+
+def parse(String description) {
+	def results = []
+  //   log.debug("RAW command: $description")
+	if (description.startsWith("Err")) {
+		log.debug("An error has occurred")
+        updateStatus()
+		} 
+    else {
+       
+       	def cmd = zwave.parse(description.replace("98C1", "9881"), [0x98: 1, 0x20: 1, 0x84: 1, 0x80: 1, 0x60: 3, 0x2B: 1, 0x26: 1])
+        //log.debug "Parsed Command: $cmd"
+        if (cmd) {
+       	results = zwaveEvent(cmd)
+        updateStatus()
+		}
+        if (event) {
+            results += event
+        }
+        
+    }
+}
+  
+        
+def zwaveEvent(hubitat.zwave.commands.securityv1.SecurityMessageEncapsulation cmd) {
+        def encapsulatedCommand = cmd.encapsulatedCommand([0x98: 1, 0x20: 1])
+			//	log.debug("UnsecuredCommand: $encapsulatedCommand")
+        // can specify command class versions here like in zwave.parse
+        if (encapsulatedCommand) {
+       // 	log.debug("UnsecuredCommand: $encapsulatedCommand")
+                return zwaveEvent(encapsulatedCommand)
+        }
+}
+
+def zwaveEvent(hubitat.zwave.commands.centralscenev1.CentralSceneNotification cmd) {
+		log.debug( "keyAttributes: $cmd.keyAttributes")
+        log.debug( "sceneNumber: $cmd.sceneNumber")
+        log.debug( "sequenceNumber: $cmd.sequenceNumber")
+      // 	log.debug( "payload: $cmd.payload")
+}
+
+def zwaveEvent(hubitat.zwave.commands.wakeupv2.WakeUpNotification cmd) {
+	  createEvent(descriptionText: "${device.displayName} woke up")
+      log.debug("WakeUpNotification ${cmd.toString()}")
+	  response(zwave.wakeUpV2.wakeUpNoMoreInformation())
+      updateStatus()
+}
+
+def zwaveEvent(hubitat.zwave.commands.wakeupv2.WakeUpIntervalReport cmd){
+	log.debug("WakeUpIntervalReport ${cmd.toString()}")
+    state.wakeInterval = cmd.seconds
+}
+
+def zwaveEvent(hubitat.zwave.commands.switchmultilevelv1.SwitchMultilevelGet cmd) {
+	log.debug "Multilevel get: $cmd"
+}
+def zwaveEvent(hubitat.zwave.commands.switchmultilevelv1.SwitchMultilevelReport cmd) {
+	log.debug "Multilevel report: $cmd.sensorValue"
+}
+
+def zwaveEvent(hubitat.zwave.commands.batteryv1.BatteryReport cmd) {
+        def map = [ name: "battery", unit: "%" ]
+        if (cmd.batteryLevel == 0xFF) {  // Special value for low battery alert
+                map.value = 1
+                map.descriptionText = "${device.displayName} has a low battery"
+                map.isStateChange = true
+        } else {
+                map.value = cmd.batteryLevel
+                log.debug ("Battery: $cmd.batteryLevel")
+        }
+        // Store time of last battery update so we don't ask every wakeup, see WakeUpNotification handler
+        state.lastbatt = new Date().time
+        sendEvent(map)
+}
+
+
+def zwaveEvent(hubitat.zwave.commands.basicv1.BasicReport cmd){
+        log.debug "basic event: $cmd.value"
+}
+
+
+def zwaveEvent(hubitat.zwave.commands.sceneactivationv1.SceneActivationSet cmd) {
+	// log.debug( "Dimming Duration: $cmd.dimmingDuration")
+    // log.debug( "Button code: $cmd.sceneId")
+   
+    
+    if ( cmd.sceneId == 11 ) {
+			sendEvent(name:"pushed", value: 1)
+            log.debug( "Button 1 was pushed" )
+			runIn(1, "sendFillerPush")
+			}
+   	else if  ( cmd.sceneId == 12 ) {
+			sendEvent(name:"doubleTapped", value: 1)
+            log.debug( "Button 1 was Double Clicked" )
+			runIn(1, "sendFillerDoubleTapped")
+            }
+   	else if  ( cmd.sceneId == 13 ) {
+			sendEvent(name:"held", value: 1)
+            log.debug( "Button 1 Hold start" )
+			runIn(1, "sendFillerHold")
+            }
+    else if  ( cmd.sceneId == 14 ) {
+            log.debug( "Button 1 Click-Hold Started" )
+			runIn(1, "sendFiller", [data: "clickHeld"])
+            }
+   	else if  ( cmd.sceneId == 15 ) {
+			sendEvent(name:"released", value: 1)
+            log.debug( "Button 1 Hold stop" )
+			runIn(1, "sendFillerRelease")
+            }
+    else if  ( cmd.sceneId == 16 ) {
+            log.debug( "Button 1 Click-Hold Stopped" )
+			runIn(1, "sendFiller", [data: "clickHoldReleased"])
+            }
+    else if  ( cmd.sceneId == 21 ) {
+            sendEvent(name:"pushed", value: 2)
+            log.debug( "Button 2 was pushed" )
+			runIn(1, "sendFillerPush")
+            }
+    else if  ( cmd.sceneId == 22 ) {
+			sendEvent(name:"doubleTapped", value: 2)
+            log.debug( "Button 2 was Double Clicked" )
+			runIn(1, "sendFillerDoubleTapped")
+            }
+    else if  ( cmd.sceneId == 23 ) {
+			sendEvent(name:"held", value: 2)
+            log.debug( "Button 2 Hold start" )
+			runIn(1, "sendFillerHold")
+            }
+    else if  ( cmd.sceneId == 24 ) {
+            log.debug( "Button 2 Click-Hold Started" )
+			runIn(1, "sendFiller", [data: "clickHeld"])
+            }
+   	else if  ( cmd.sceneId == 25 ) {
+			sendEvent(name:"released", value: 2)
+            log.debug( "Button 2 Hold stop" )
+			runIn(1, "sendFillerRelease")
+            }
+    else if  ( cmd.sceneId == 26 ) {
+            log.debug( "Button 2 Click-Hold Stopped" )
+			runIn(1, "sendFiller", [data: "clickHoldReleased"])
+            }
+	else if  ( cmd.sceneId == 31 ) {
+            sendEvent(name:"pushed", value: 3)
+            log.debug( "Button 3 was pushed" )
+			runIn(1, "sendFillerPush")
+            }
+    else if  ( cmd.sceneId == 32 ) {
+			sendEvent(name:"doubleTapped", value: 3)
+            log.debug( "Button 3 was Double Clicked" )
+			runIn(1, "sendFillerDoubleTapped")
+            }
+    else if  ( cmd.sceneId == 33 ) {
+			sendEvent(name:"held", value: 3)
+            log.debug( "Button 3 Hold start" )
+			runIn(1, "sendFillerHold")
+            }
+    else if  ( cmd.sceneId == 34 ) {
+            log.debug( "Button 3 Click-Hold Started" )
+			runIn(1, "sendFiller", [data: "clickHeld"])
+            }
+   	else if  ( cmd.sceneId == 35 ) {
+			sendEvent(name:"released", value: 3)
+            log.debug( "Button 3 Hold stop" )
+			runIn(1, "sendFillerRelease")
+            }
+    else if  ( cmd.sceneId == 36 ) {
+            log.debug( "Button 3 Click-Hold Stopped" )
+			runIn(1, "sendFiller", [data: "clickHoldReleased"])
+            }
+    else if ( cmd.sceneId == 41 ) {
+            sendEvent(name:"pushed", value: 4)
+            log.debug( "Button 4 was pushed" )
+			runIn(1, "sendFillerPush")
+            }
+    else if  ( cmd.sceneId == 42 ) {
+			sendEvent(name:"doubleTapped", value: 4)
+            log.debug( "Button 4 was Double Clicked" )
+			runIn(1, "sendFillerDoubleTapped")
+            }
+    else if  ( cmd.sceneId == 43 ) {
+			sendEvent(name:"held", value: 4)
+            log.debug( "Button 4 Hold start" )
+			runIn(1, "sendFillerHold")
+            }
+    else if  ( cmd.sceneId == 44 ) {
+            log.debug( "Button 4 Click-Hold Started" )
+			runIn(1, "sendFiller", [data: "clickHeld"])
+            }
+   	else if  ( cmd.sceneId == 45 ) {
+			sendEvent(name:"released", value: 4)
+            log.debug( "Button 4 Hold stop" )
+			runIn(1, "sendFillerRelease")
+            }
+    else if  ( cmd.sceneId == 46 ) {
+            log.debug( "Button 4 Click-Hold Stopped" )
+			runIn(1, "sendFiller", [data: "clickHoldReleased"])
+            }
+    else {
+        	log.debug( "Commands and Button ID combinations unaccounted for happened" )
+            }
+}
+
+def sendFillerPush() {
+	sendEvent(name: "pushed", value: 0)
+} 
+
+def sendFillerHold() {
+	sendEvent(name: "held", value: 0)
+}
+
+def sendFillerDoubleTapped() {
+	sendEvent(name: "doubleTapped", value: 0)
+} 
+
+def sendFillerRelease() {
+	sendEvent(name: "released", value: 0)
+}
+
+
+def refresh() {
+	configure()
+    updateStatus()
+}
+       
+private getBatteryRuntime() {
+   def currentmillis = now() - state.batteryRuntimeStart
+   def days=0
+   def hours=0
+   def mins=0
+   def secs=0
+   secs = (currentmillis/1000).toInteger() 
+   mins=(secs/60).toInteger() 
+   hours=(mins/60).toInteger() 
+   days=(hours/24).toInteger() 
+   secs=(secs-(mins*60)).toString().padLeft(2, '0') 
+   mins=(mins-(hours*60)).toString().padLeft(2, '0') 
+   hours=(hours-(days*24)).toString().padLeft(2, '0') 
+ 
+
+  if (days>0) { 
+      return "$days days and $hours:$mins:$secs"
+  } else {
+      return "$hours:$mins:$secs"
+  }
+}
+
+def resetBatteryRuntime() {
+    if (state.lastReset != null && now() - state.lastReset < 5000) {
+        log.debug("Battery reset Double Press")
+        state.batteryRuntimeStart = now()
+        updateStatus()
+    }
+    state.lastReset = now()
+}
+
+private updateStatus(){
+   def result = []
+   if(state.batteryRuntimeStart != null){
+        //sendEvent(name:"batteryRuntime", value:getBatteryRuntime(), displayed:false)
+        sendEvent(name:"statusText2", value: "Battery: ${getBatteryRuntime()} Double tap to reset", displayed:true)
+        
+    } else {
+        state.batteryRuntimeStart = now()
+    }
+}
+
+
+
