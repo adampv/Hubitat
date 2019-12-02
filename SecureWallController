@@ -110,15 +110,15 @@ def zwaveEvent(hubitat.zwave.commands.wakeupv2.WakeUpNotification cmd) {
 }
 
 def zwaveEvent(hubitat.zwave.commands.wakeupv2.WakeUpIntervalReport cmd){
-	log.debug("WakeUpIntervalReport ${cmd.toString()}")
+	//log.debug("WakeUpIntervalReport ${cmd.toString()}")
     state.wakeInterval = cmd.seconds
 }
 
 def zwaveEvent(hubitat.zwave.commands.switchmultilevelv1.SwitchMultilevelGet cmd) {
-	log.debug "Multilevel get: $cmd"
+	//log.debug "Multilevel get: $cmd"
 }
 def zwaveEvent(hubitat.zwave.commands.switchmultilevelv1.SwitchMultilevelReport cmd) {
-	log.debug "Multilevel report: $cmd.sensorValue"
+	//log.debug "Multilevel report: $cmd.sensorValue"
 }
 
 def zwaveEvent(hubitat.zwave.commands.batteryv1.BatteryReport cmd) {
@@ -138,7 +138,7 @@ def zwaveEvent(hubitat.zwave.commands.batteryv1.BatteryReport cmd) {
 
 
 def zwaveEvent(hubitat.zwave.commands.basicv1.BasicReport cmd){
-        log.debug "basic event: $cmd.value"
+        //log.debug "basic event: $cmd.value"
 }
 
 
@@ -149,114 +149,130 @@ def zwaveEvent(hubitat.zwave.commands.sceneactivationv1.SceneActivationSet cmd) 
     
     if ( cmd.sceneId == 11 ) {
 			sendEvent(name:"pushed", value: 1)
-            log.debug( "Button 1 was pushed" )
-			runIn(1, "sendFillerPush")
+          //  log.debug( "Button 1 was pushed" )
+			state.pushed = 1
+			runIn(1, "sendneutraliser")
 			}
    	else if  ( cmd.sceneId == 12 ) {
 			sendEvent(name:"doubleTapped", value: 1)
-            log.debug( "Button 1 was Double Clicked" )
-			runIn(1, "sendFillerDoubleTapped")
+         //   log.debug( "Button 1 was Double Clicked" )
+			state.doubleTapped = 1
+			runIn(1, "sendneutraliser")
             }
    	else if  ( cmd.sceneId == 13 ) {
 			sendEvent(name:"held", value: 1)
-            log.debug( "Button 1 Hold start" )
-			runIn(1, "sendFillerHold")
+          //  log.debug( "Button 1 Hold start" )
+			state.held = 1
+			runIn(1, "sendneutraliser")
             }
     else if  ( cmd.sceneId == 14 ) {
-            log.debug( "Button 1 Click-Hold Started" )
+         //   log.debug( "Button 1 Click-Hold Started" )
 			runIn(1, "sendFiller", [data: "clickHeld"])
             }
    	else if  ( cmd.sceneId == 15 ) {
 			sendEvent(name:"released", value: 1)
-            log.debug( "Button 1 Hold stop" )
-			runIn(1, "sendFillerRelease")
+       //     log.debug( "Button 1 Hold stop" )
+			state.released = 1
+			runIn(1, "sendneutraliser")
             }
     else if  ( cmd.sceneId == 16 ) {
-            log.debug( "Button 1 Click-Hold Stopped" )
+        //    log.debug( "Button 1 Click-Hold Stopped" )
 			runIn(1, "sendFiller", [data: "clickHoldReleased"])
             }
     else if  ( cmd.sceneId == 21 ) {
             sendEvent(name:"pushed", value: 2)
-            log.debug( "Button 2 was pushed" )
-			runIn(1, "sendFillerPush")
+        //    log.debug( "Button 2 was pushed" )
+			state.pushed = 2
+			runIn(1, "sendneutraliser")
             }
     else if  ( cmd.sceneId == 22 ) {
 			sendEvent(name:"doubleTapped", value: 2)
-            log.debug( "Button 2 was Double Clicked" )
-			runIn(1, "sendFillerDoubleTapped")
+        //    log.debug( "Button 2 was Double Clicked" )
+			state.doubleTapped = 2
+			runIn(1, "sendneutraliser")
             }
     else if  ( cmd.sceneId == 23 ) {
 			sendEvent(name:"held", value: 2)
-            log.debug( "Button 2 Hold start" )
-			runIn(1, "sendFillerHold")
+        //    log.debug( "Button 2 Hold start" )
+			state.held = 2
+			runIn(1, "sendneutraliser")
             }
     else if  ( cmd.sceneId == 24 ) {
-            log.debug( "Button 2 Click-Hold Started" )
+       //     log.debug( "Button 2 Click-Hold Started" )
 			runIn(1, "sendFiller", [data: "clickHeld"])
             }
    	else if  ( cmd.sceneId == 25 ) {
 			sendEvent(name:"released", value: 2)
-            log.debug( "Button 2 Hold stop" )
-			runIn(1, "sendFillerRelease")
+         //   log.debug( "Button 2 Hold stop" )
+			state.released = 2
+			runIn(1, "sendneutraliser")
             }
     else if  ( cmd.sceneId == 26 ) {
-            log.debug( "Button 2 Click-Hold Stopped" )
+        //    log.debug( "Button 2 Click-Hold Stopped" )
 			runIn(1, "sendFiller", [data: "clickHoldReleased"])
             }
 	else if  ( cmd.sceneId == 31 ) {
             sendEvent(name:"pushed", value: 3)
-            log.debug( "Button 3 was pushed" )
-			runIn(1, "sendFillerPush")
+        //    log.debug( "Button 3 was pushed" )
+			state.pushed = 3
+			runIn(1, "sendneutraliser")
             }
     else if  ( cmd.sceneId == 32 ) {
 			sendEvent(name:"doubleTapped", value: 3)
-            log.debug( "Button 3 was Double Clicked" )
-			runIn(1, "sendFillerDoubleTapped")
+       //     log.debug( "Button 3 was Double Clicked" )
+			state.doubleTapped = 3
+			runIn(1, "sendneutraliser")
             }
     else if  ( cmd.sceneId == 33 ) {
 			sendEvent(name:"held", value: 3)
-            log.debug( "Button 3 Hold start" )
-			runIn(1, "sendFillerHold")
+        //    log.debug( "Button 3 Hold start" )
+			state.held = 3
+			runIn(1, "sendneutraliser")
             }
     else if  ( cmd.sceneId == 34 ) {
-            log.debug( "Button 3 Click-Hold Started" )
+         //   log.debug( "Button 3 Click-Hold Started" )
 			runIn(1, "sendFiller", [data: "clickHeld"])
             }
    	else if  ( cmd.sceneId == 35 ) {
 			sendEvent(name:"released", value: 3)
-            log.debug( "Button 3 Hold stop" )
-			runIn(1, "sendFillerRelease")
+         //   log.debug( "Button 3 Hold stop" )
+			state.released = 3
+			runIn(1, "sendneutraliser")
             }
     else if  ( cmd.sceneId == 36 ) {
-            log.debug( "Button 3 Click-Hold Stopped" )
+        //    log.debug( "Button 3 Click-Hold Stopped" )
 			runIn(1, "sendFiller", [data: "clickHoldReleased"])
             }
     else if ( cmd.sceneId == 41 ) {
             sendEvent(name:"pushed", value: 4)
-            log.debug( "Button 4 was pushed" )
-			runIn(1, "sendFillerPush")
+        //    log.debug( "Button 4 was pushed" )
+			state.pushed = 4	
+			runIn(1, "sendneutraliser")
             }
     else if  ( cmd.sceneId == 42 ) {
 			sendEvent(name:"doubleTapped", value: 4)
-            log.debug( "Button 4 was Double Clicked" )
-			runIn(1, "sendFillerDoubleTapped")
+         //   log.debug( "Button 4 was Double Clicked" )
+			state.doubleTapped = 4
+			runIn(1, "sendneutraliser")
             }
     else if  ( cmd.sceneId == 43 ) {
 			sendEvent(name:"held", value: 4)
-            log.debug( "Button 4 Hold start" )
-			runIn(1, "sendFillerHold")
+         //   log.debug( "Button 4 Hold start" )
+			state.held = 4
+			runIn(1, "sendneutraliser")
             }
     else if  ( cmd.sceneId == 44 ) {
-            log.debug( "Button 4 Click-Hold Started" )
+         //   log.debug( "Button 4 Click-Hold Started" )
 			runIn(1, "sendFiller", [data: "clickHeld"])
             }
    	else if  ( cmd.sceneId == 45 ) {
 			sendEvent(name:"released", value: 4)
-            log.debug( "Button 4 Hold stop" )
-			runIn(1, "sendFillerRelease")
+         //   log.debug( "Button 4 Hold stop" )
+			state.released = 4
+			runIn(1, "sendneutraliser")
             }
     else if  ( cmd.sceneId == 46 ) {
-            log.debug( "Button 4 Click-Hold Stopped" )
+         //   log.debug( "Button 4 Click-Hold Stopped" )
 			runIn(1, "sendFiller", [data: "clickHoldReleased"])
             }
     else {
@@ -278,6 +294,25 @@ def sendFillerDoubleTapped() {
 
 def sendFillerRelease() {
 	sendEvent(name: "released", value: 0)
+}
+
+def sendneutraliser() {
+	if (state.pushed > 0){
+		sendEvent(name: "pushed", value: 0)
+	//	log.debug("pushed neutralised")
+	}
+	if (state.doubleTapped > 0){
+		sendEvent(name: "doubleTapped", value: 0)
+	//	log.debug("doubleTapped neutralised")
+	}
+	if (state.held > 0){
+		sendEvent(name: "held", value: 0)
+	//	log.debug("held neutralised")
+	}
+	if (state.released > 0){
+		sendEvent(name: "released", value: 0)
+	//	log.debug("released neutralised")
+	}
 }
 
 
@@ -310,7 +345,7 @@ private getBatteryRuntime() {
 
 def resetBatteryRuntime() {
     if (state.lastReset != null && now() - state.lastReset < 5000) {
-        log.debug("Battery reset Double Press")
+     //   log.debug("Battery reset Double Press")
         state.batteryRuntimeStart = now()
         updateStatus()
     }
