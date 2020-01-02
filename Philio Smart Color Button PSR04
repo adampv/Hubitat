@@ -1,0 +1,288 @@
+/**
+ *  Copyright 2019 AdamV
+ *
+ *  Licensed under the Apache License, Version 2.0 (the "License"); you may not use this file except
+ *  in compliance with the License. You may obtain a copy of the License at:
+ *
+ *      http://www.apache.org/licenses/LICENSE-2.0
+ *
+ *  Unless required by applicable law or agreed to in writing, software distributed under the License is distributed
+ *  on an "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the License
+ *  for the specific language governing permissions and limitations under the License.
+ *
+ *
+ *  V0.3 - Ported to Hubitat + correctly identified button hold and release + get battery regularly
+ *	V0.2 - Corrected Button Capability definition, Added Hue Change and clour control
+ *	V0.1 - Initial Commit
+ */
+metadata {
+	definition (name: "Philio Smart Color Button PSR04", namespace: "Philio", author: "AdamV") {
+		capability "Actuator"
+		capability "Switch"
+		capability "Switch Level"
+		capability "Refresh"
+		capability "Sensor"
+        capability "Configuration"
+        capability "Battery"
+        capability "PushableButton"
+        capability "HoldableButton"
+        capability "ReleasableButton"
+        capability "Color Control"
+
+		fingerprint deviceId: "0x1801", inClusters: "0x5E, 0x80, 0x85, 0x70, 0x72, 0x86, 0x84, 0x59, 0x73, 0x5A, 0x8F, 0x98, 0x7A, 0x5B", outClusters: "0x20"
+									
+    }
+
+	simulator {
+		status "on":  "command: 2003, payload: FF"
+		status "off": "command: 2003, payload: 00"
+	}
+
+	
+}
+
+def parse(String description) {
+	def result = []
+	if (description.startsWith("Err")) {
+	    result = createEvent(descriptionText:description, isStateChange:true)
+	} else {
+		def cmd = zwave.parse(description, [0x20: 1, 0x84: 1, 0x98: 1, 0x56: 1, 0x60: 3])
+		if (cmd) {
+			result += zwaveEvent(cmd)
+		}
+     //   log.debug("This is what I receive: $cmd")
+	}
+	return result
+}
+
+def updated() {
+	response(zwave.wakeUpV1.wakeUpNoMoreInformation())
+}
+
+def zwaveEvent(hubitat.zwave.commands.wakeupv1.WakeUpNotification cmd) {
+    
+    createEvent(descriptionText: "${device.displayName} woke up")
+   // log.debug("woke up")    
+    
+    def cmds = []
+    
+    cmds += response(zwave.batteryV1.batteryGet().format())
+    cmds += response(zwave.wakeUpV1.wakeUpNoMoreInformation())
+    
+    if (cmds) return delayBetween(cmds, 750)
+    
+}
+
+def zwaveEvent(hubitat.zwave.commands.basicv1.BasicReport cmd) {
+	if (cmd.value == 0) {
+		createEvent(name: "switch", value: "off")
+	} else if (cmd.value == 255) {
+		createEvent(name: "switch", value: "on")
+	} else {
+		[ createEvent(name: "switch", value: "on"), createEvent(name: "switchLevel", value: cmd.value) ]
+	}
+}
+
+def zwaveEvent(hubitat.zwave.commands.batteryv1.BatteryReport cmd) {
+      // log.debug("got battery info")
+        def map = [ name: "battery", unit: "%" ]
+        if (cmd.batteryLevel == 0xFF) {  // Special value for low battery alert
+                map.value = 1
+                map.descriptionText = "${device.displayName} has a low battery"
+                map.isStateChange = true
+        } else {
+                map.value = cmd.batteryLevel
+           //     log.debug ("Battery: $cmd.batteryLevel")
+        }
+        // Store time of last battery update so we don't ask every wakeup, see WakeUpNotification handler
+        state.lastbatt = new Date().time
+        createEvent(map)
+}
+
+def zwaveEvent(hubitat.zwave.commands.securityv1.SecurityMessageEncapsulation cmd) {
+	def encapsulatedCommand = cmd.encapsulatedCommand([0x20: 1, 0x84: 1])
+	if (encapsulatedCommand) {
+		state.sec = 1
+		def result = zwaveEvent(encapsulatedCommand)
+     //   log.debug(encapsulatedCommand)
+		result = result.collect {
+			if (it instanceof hubitat.device.HubAction && !it.toString().startsWith("9881")) {
+				response(cmd.CMD + "00" + it.toString())
+			} else {
+				it
+			}
+		}
+       // log.debug(result)
+		result
+	}
+}
+
+def zwaveEvent(hubitat.zwave.commands.centralscenev1.CentralSceneNotification cmd) {
+		//log.debug( "keyAttributes: $cmd.keyAttributes")
+        //log.debug( "sceneNumber: $cmd.sceneNumber")
+       // log.debug( "sequenceNumber: $cmd.sequenceNumber")
+        if ( cmd.sceneNumber == 1 && cmd.keyAttributes == 0) {
+        	Integer button = 1
+            sendEvent(name: "button", value: "pushed", data: [buttonNumber: button], descriptionText: "$device.displayName button $button was pushed", isStateChange: true)
+         //   log.debug( "Button $button was pushed" )
+            }
+        else if ( cmd.sceneNumber == 1 && cmd.keyAttributes == 2) {
+        	Integer button = 1
+            sendEvent(name: "button", value: "held", data: [buttonNumber: button], descriptionText: "$device.displayName button $button was held", isStateChange: true)
+        //    log.debug( "Button $button was held" )
+            }
+        else if ( cmd.sceneNumber == 1 && cmd.keyAttributes == 1) {
+        	Integer button = 1
+            sendEvent(name: "button", value: "released", data: [buttonNumber: button], descriptionText: "$device.displayName button $button was Released", isStateChange: true)
+        //    log.debug( "Button $button was Released" )
+            }
+      // 	log.debug( "payload: $cmd.payload")
+}
+
+def zwaveEvent(hubitat.zwave.commands.basicv1.BasicSet cmd) {
+	
+        def dimmerValue = cmd.value
+   	if (cmd.value == 0) {
+		sendEvent(name: "switch", value: "off")
+   //     log.debug("turned off")
+        sendEvent(name: "level", value: dimmerValue)
+        def cmds = []
+    
+            cmds += response(zwave.batteryV1.batteryGet().format())
+    
+            if (cmds) return delayBetween(cmds, 750)
+	} else if (cmd.value == 255) {
+		sendEvent(name: "switch", value: "on")
+     //   log.debug("turned on")
+	} else {
+		sendEvent(name: "switch", value: "on")
+        //createEvent(name: "level", value: dimmerValue)
+        sendEvent(name: "level", value: dimmerValue)
+     //   log.debug("sent switch on at value $cmd.value")
+        
+        def colourHue = Math.round(dimmerValue*3.6363636)
+     //   log.debug("colour Hue is $colourHue degrees")
+        sendEvent(name: "hue", value: colourHue)
+        sendEvent(name: "saturation", value: 50)
+	}
+
+      // 	log.debug( "payload: $cmd.payload")
+}
+
+ 
+
+def zwaveEvent(hubitat.zwave.commands.crc16encapv1.Crc16Encap cmd) {
+	def versions = [0x31: 2, 0x30: 1, 0x84: 1, 0x9C: 1, 0x70: 2]
+	// def encapsulatedCommand = cmd.encapsulatedCommand(versions)
+	def version = versions[cmd.commandClass as Integer]
+	def ccObj = version ? zwave.commandClass(cmd.commandClass, version) : zwave.commandClass(cmd.commandClass)
+	def encapsulatedCommand = ccObj?.command(cmd.command)?.parse(cmd.data)
+	if (encapsulatedCommand) {
+		zwaveEvent(encapsulatedCommand)
+	}
+}
+
+def zwaveEvent(hubitat.zwave.Command cmd) {
+	createEvent(descriptionText: "$device.displayName: $cmd", isStateChange: true)
+}
+
+def on() {
+	commands([zwave.basicV1.basicSet(value: 0xFF), zwave.basicV1.basicGet()])
+}
+
+def off() {
+	commands([zwave.basicV1.basicSet(value: 0x00), zwave.basicV1.basicGet()])
+}
+
+def refresh() {
+	command(zwave.basicV1.basicGet())
+}
+
+def setLevel(value) {
+	commands([zwave.basicV1.basicSet(value: value as Integer), zwave.basicV1.basicGet()], 4000)
+}
+
+private command(hubitat.zwave.Command cmd) {
+	if (state.sec) {
+		zwave.securityV1.securityMessageEncapsulation().encapsulate(cmd).format()
+	} else {
+		cmd.format()
+	}
+}
+
+private commands(commands, delay=200) {
+	delayBetween(commands.collect{ command(it) }, delay)
+}
+
+def setHue(value) {
+	//log.debug "setHue($value)"
+	setColor(hue: value)
+    setColor(saturation: 50)
+}
+ 
+def setColor(value) {
+	def result = []
+    def warmWhite = 0
+    def coldWhite = 0
+//	log.debug "setColor: ${value}"
+	if (value.hue && value.saturation) {
+        log.debug "setting color with hue & saturation"
+        def hue = value.hue ?: device.currentValue("hue")
+		def saturation = value.saturation ?: device.currentValue("saturation")
+		if(hue == null) hue = 13
+		if(saturation == null) saturation = 13
+		def rgb = huesatToRGB(hue as Integer, saturation as Integer)
+    	if ( value.hue == 53 && value.saturation == 91 ) {
+            Random rand = new Random()
+            int max = 100
+            hue = rand.nextInt(max+1)
+            rgb = huesatToRGB(hue as Integer, saturation as Integer)
+    	}
+        else if ( value.hue == 23 && value.saturation == 56 ) {
+        	def level = 255
+        	if ( value.level != null ) level = value.level * 0.01 * 255
+            warmWhite = level
+            coldWhite = 0
+            rgb[0] = 0
+            rgb[1] = 0
+            rgb[2] = 0
+    	}
+        else {
+    		if ( value.hue > 5 && value.hue < 100 ) hue = value.hue - 5 else hue = 1
+            rgb = huesatToRGB(hue as Integer, saturation as Integer)
+    	}
+		//result << zwave.switchColorV3.switchColorSet(red: rgb[0], green: rgb[1], blue: rgb[2], warmWhite:warmWhite, coldWhite:coldWhite)
+        if(value.level != null && value.level > 1){
+        	if(value.level > 99) value.level = 99
+			//result << zwave.switchMultilevelV3.switchMultilevelSet(value: value.level, dimmingDuration: 3500)
+            //result << zwave.switchMultilevelV3.switchMultilevelGet()
+        }
+	}
+    else if (value.hex) {
+		def c = value.hex.findAll(/[0-9a-fA-F]{2}/).collect { Integer.parseInt(it, 16) }
+	//	result << zwave.switchColorV3.switchColorSet(red:c[0], green:c[1], blue:c[2], warmWhite:0, coldWhite:0)
+	} 
+ //	result << zwave.basicV1.basicSet(value: 0xFF)
+	if(value.hue) sendEvent(name: "hue", value: value.hue)
+	if(value.hex) sendEvent(name: "color", value: value.hex)
+	if(value.switch) sendEvent(name: "switch", value: value.switch)
+	if(value.saturation) sendEvent(name: "saturation", value: value.saturation)
+ 
+  //  toggleTiles("all")
+//	commands(result)
+}
+
+
+  def configure() {
+    
+	//		log.debug "Resetting Sensor Parameters to Hubitat Compatible Defaults"
+	def cmds = []
+	cmds += response(zwave.associationV1.associationSet(groupingIdentifier: 1, nodeId: zwaveHubNodeId).format())
+    cmds += response(zwave.associationV1.associationSet(groupingIdentifier: 2, nodeId: zwaveHubNodeId).format())
+    cmds += response(zwave.configurationV1.configurationSet(configurationValue: [10], parameterNumber: 10, size: 1).format())
+    cmds += response(zwave.configurationV1.configurationSet(configurationValue: [0x00], parameterNumber: 26, size: 1).format())
+    cmds += response(zwave.configurationV1.configurationSet(configurationValue: [0x00], parameterNumber: 25, size: 1).format())
+    cmds += response(zwave.batteryV1.batteryGet().format())
+    
+    if (cmds) return delayBetween(cmds, 750)
+}
