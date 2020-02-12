@@ -3,7 +3,8 @@
  *	Fibaro FGS-222 Double Relay Switch Device Type - For use on Hubitat
  *  
  *	Author: Robin Winbourne
- *	Date: 2018-03-24 
+ *	Edited by: Adam Vine
+ *	Date: 2020-01-24 
  */
  
 metadata {
@@ -233,7 +234,7 @@ def zwaveEvent(hubitat.zwave.commands.switchbinaryv1.SwitchBinaryReport cmd)
 
 def zwaveEvent(hubitat.zwave.commands.multichannelv3.MultiChannelCapabilityReport cmd) 
 {
-  //  log.debug "multichannelv3.MultiChannelCapabilityReport $cmd"
+ /*  log.debug "multichannelv3.MultiChannelCapabilityReport $cmd"
     if (cmd.endPoint == 2 ) {
         def currstate = device.currentState("switch2").getValue()
         if (currstate == "on")
@@ -247,7 +248,7 @@ def zwaveEvent(hubitat.zwave.commands.multichannelv3.MultiChannelCapabilityRepor
         sendEvent(name: "switch1", value: "off", isStateChange: true, display: false)
         else if (currstate == "off")
         sendEvent(name: "switch1", value: "on", isStateChange: true, display: false)
-    }
+    }*/
 }
 
 def zwaveEvent(hubitat.zwave.commands.multichannelv3.MultiChannelCmdEncap cmd) {
@@ -257,6 +258,7 @@ def zwaveEvent(hubitat.zwave.commands.multichannelv3.MultiChannelCmdEncap cmd) {
        if (cmd.destinationEndPoint == 2 ) {
 
            if (cmd.parameter.first() > 180){
+          //     log.debug("2 is on")
         	sendEvent(name: "switch2", value: "on", isStateChange: true, display: false)
             currstate = device.currentState("switch1").getValue()
             if (currstate == "on"){
@@ -265,6 +267,7 @@ def zwaveEvent(hubitat.zwave.commands.multichannelv3.MultiChannelCmdEncap cmd) {
            }
          
            else if (cmd.parameter.first() == 0){
+          //     log.debug("2 is off")
         	sendEvent(name: "switch2", value: "off", isStateChange: true, display: false)
             currstate = device.currentState("switch1").getValue()
             if (currstate == "off"){
@@ -275,6 +278,7 @@ def zwaveEvent(hubitat.zwave.commands.multichannelv3.MultiChannelCmdEncap cmd) {
     else if (cmd.destinationEndPoint == 1 ) {
 
         if (cmd.parameter.first() > 180){
+         //   log.debug("1 is on")
         	sendEvent(name: "switch1", value: "on", isStateChange: true, display: false)
             currstate = device.currentState("switch2").getValue()
             if (currstate == "on"){
@@ -282,6 +286,7 @@ def zwaveEvent(hubitat.zwave.commands.multichannelv3.MultiChannelCmdEncap cmd) {
            }
         }
         else if (cmd.parameter.first() == 0){
+         //   log.debug("1 is off")
         	sendEvent(name: "switch1", value: "off", isStateChange: true, display: false)
             currstate = device.currentState("switch2").getValue()
             if (currstate == "off"){
@@ -339,7 +344,7 @@ def refresh() {
 	def cmds = []
     cmds << zwave.manufacturerSpecificV2.manufacturerSpecificGet().format()
 	cmds << zwave.multiChannelV3.multiChannelCmdEncap(sourceEndPoint:1, destinationEndPoint:1, commandClass:37, command:2).format()
-    cmds << zwave.multiChannelV3.multiChannelCmdEncap(sourceEndPoint:1, destinationEndPoint:2, commandClass:37, command:2).format()
+    cmds << zwave.multiChannelV3.multiChannelCmdEncap(sourceEndPoint:2, destinationEndPoint:2, commandClass:37, command:2).format()
 	delayBetween(cmds, 1000)
 }
 
@@ -352,7 +357,7 @@ def zwaveEvent(hubitat.zwave.commands.manufacturerspecificv2.ManufacturerSpecifi
 def poll() {
 	def cmds = []
 	cmds << zwave.multiChannelV3.multiChannelCmdEncap(sourceEndPoint:1, destinationEndPoint:1, commandClass:37, command:2).format()
-    cmds << zwave.multiChannelV3.multiChannelCmdEncap(sourceEndPoint:1, destinationEndPoint:2, commandClass:37, command:2).format()
+    cmds << zwave.multiChannelV3.multiChannelCmdEncap(sourceEndPoint:2, destinationEndPoint:2, commandClass:37, command:2).format()
 	delayBetween(cmds, 1000)
 }
 
