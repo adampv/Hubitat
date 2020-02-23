@@ -1,6 +1,7 @@
 /**
  *  
- *	Haseman DRS6-AI 6 Relay Switch Device Type - For use on Hubitat
+ *	Haseman DRS6-AI 6 Relay Switch Device Type - For use on Hubitat. Not tested in every possible scenario - use at your own risk
+ *  
  *  
  *	Author: Adam Vine
  *	Date: 2020-02-23 
