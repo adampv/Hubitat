@@ -3,7 +3,7 @@
  *	Haseman DRS6-AI 6 Relay Switch Device Type - For use on Hubitat
  *  
  *	Author: Adam Vine
- *	Date: 2020-02-012 
+ *	Date: 2020-02-23 
  */
  
 metadata {
@@ -23,6 +23,25 @@ attribute "switch4", "string"
 attribute "switch5", "string"
 attribute "switch6", "string"
 attribute "binarySensor", "string"
+
+    
+// Work in Progress multiway single on functionality in driver
+
+attribute "switch1Multiway", "string"
+attribute "switch2Multiway", "string"
+attribute "switch3Multiway", "string"
+attribute "switch4Multiway", "string"
+attribute "switch5Multiway", "string"
+attribute "switch6Multiway", "string"
+    
+attribute "SwitchMode1", "string"
+attribute "SwitchMode2", "string" 
+attribute "SwitchMode3", "string"
+attribute "SwitchMode4", "string" 
+attribute "SwitchMode5", "string"
+attribute "SwitchMode6", "string" 
+
+
 
 command "on1"
 command "off1"
@@ -51,9 +70,45 @@ command "updateSingleParam" // This custom command can be used with Rule Machine
 
 fingerprint deviceId: "0x1001", inClusters:"0x5E,0x20,0x25,0x30,0x71,0x31,0x70,0x85,0x8E,0x60,0x7A,0x5A,0x59,0x73,0x86,0x72", outClusters: "0x20"
 
-}
+    }
     
  
+// Work in Progress multiway single on functionality in driver
+
+    preferences {
+        input name: "SwitchMode1", type: "enum", defaultValue: "0", required: true,
+            title: "Switch 1 Operating mode:",
+       		options: [["0" : "Normal"],
+                    ["1" : "Single-On Multiway"]]
+        
+        input name: "SwitchMode2", type: "enum", defaultValue: "0", required: true,
+            title: "Switch 2 Operating mode:",
+       		options: [["0" : "Normal"],
+                    ["1" : "Single-On Multiway"]]
+        
+        input name: "SwitchMode3", type: "enum", defaultValue: "0", required: true,
+            title: "Switch 3 Operating mode:",
+       		options: [["0" : "Normal"],
+                    ["1" : "Single-On Multiway"]]
+        
+        input name: "SwitchMode4", type: "enum", defaultValue: "0", required: true,
+            title: "Switch 4 Operating mode:",
+       		options: [["0" : "Normal"],
+                    ["1" : "Single-On Multiway"]]
+        
+        input name: "SwitchMode5", type: "enum", defaultValue: "0", required: true,
+            title: "Switch 5 Operating mode:",
+       		options: [["0" : "Normal"],
+                    ["1" : "Single-On Multiway"]]
+        
+        input name: "SwitchMode6", type: "enum", defaultValue: "0", required: true,
+            title: "Switch 6 Operating mode:",
+       		options: [["0" : "Normal"],
+                    ["1" : "Single-On Multiway"]]
+        
+        input name: "debugOutput",   type: "bool", title: "<b>Enable debug logging?</b>",   description: "<br>", defaultValue: true  
+    }
+
 }
 
 def parse(String description) {
@@ -61,7 +116,8 @@ def parse(String description) {
     def cmd = zwave.parse(description)
     if (cmd) {
         result += zwaveEvent(cmd)
-     //   log.debug "Parsed ${cmd} to ${result.inspect()}"
+        //log.debug "Parsed ${cmd} to ${result.inspect()}"
+        logDebug("Parsed ${cmd} to ${result.inspect()}")
     } else {
      //   log.debug "Non-parsed event: ${description}"
     }
@@ -101,263 +157,270 @@ def zwaveEvent(hubitat.zwave.commands.multichannelv3.MultiChannelCapabilityRepor
 {
     
   //  log.debug("multichannelv3.MultiChannelCapabilityReport endPoint = ${cmd.endPoint}, genericDeviceClass = ${cmd.genericDeviceClass}, specificDeviceClass = ${cmd.specificDeviceClass}")
-   /* 
-    if (cmd.endPoint == 2 ) {
-        def currstate = device.currentState("switch2").getValue()
-        if (currstate == "on")
-        	sendEvent(name: "switch2", value: "off", isStateChange: true, display: false)
-        else if (currstate == "off")
-        	sendEvent(name: "switch2", value: "on", isStateChange: true, display: false)
-    }
-    else if (cmd.endPoint == 1 ) {
-        def currstate = device.currentState("switch1").getValue()
-        if (currstate == "on")
-        sendEvent(name: "switch1", value: "off", isStateChange: true, display: false)
-        else if (currstate == "off")
-        sendEvent(name: "switch1", value: "on", isStateChange: true, display: false)
-    }
-    else if (cmd.endPoint == 3 ) {
-        def currstate = device.currentState("switch3").getValue()
-        if (currstate == "on")
-        sendEvent(name: "switch3", value: "off", isStateChange: true, display: false)
-        else if (currstate == "off")
-        sendEvent(name: "switch3", value: "on", isStateChange: true, display: false)
-    }
-    else if (cmd.endPoint == 4 ) {
-        def currstate = device.currentState("switch4").getValue()
-        if (currstate == "on")
-        sendEvent(name: "switch4", value: "off", isStateChange: true, display: false)
-        else if (currstate == "off")
-        sendEvent(name: "switch4", value: "on", isStateChange: true, display: false)
-    }
-        else if (cmd.endPoint == 5 ) {
-        def currstate = device.currentState("switch5").getValue()
-        if (currstate == "on")
-        sendEvent(name: "switch5", value: "off", isStateChange: true, display: false)
-        else if (currstate == "off")
-        sendEvent(name: "switch5", value: "on", isStateChange: true, display: false)
-    }
-        else if (cmd.endPoint == 6 ) {
-        def currstate = device.currentState("switch6").getValue()
-        if (currstate == "on")
-        sendEvent(name: "switch6", value: "off", isStateChange: true, display: false)
-        else if (currstate == "off")
-        sendEvent(name: "switch6", value: "on", isStateChange: true, display: false)
-    }*/
+
 }
 
 def zwaveEvent(hubitat.zwave.commands.multichannelv3.MultiChannelCmdEncap cmd) {
  //  log.debug("encap at ${cmd}")
     def map = [ name: "switch$cmd.sourceEndPoint" ]
     def currstate = "off"
+
+    
+    def currstate1 = device.currentState("switch1").getValue()
+    def currstate2 = device.currentState("switch2").getValue()
+    def currstate3 = device.currentState("switch3").getValue()
+    def currstate4 = device.currentState("switch4").getValue()
+    def currstate5 = device.currentState("switch5").getValue()
+    def currstate6 = device.currentState("switch6").getValue()
+    
+    
+    
        if (cmd.sourceEndPoint == 2 ) {
 
            if (cmd.parameter.first() > 180){
-        	sendEvent(name: "switch2", value: "on", isStateChange: true, display: false)
+               if (currstate2 == "off"){
+        	        sendEvent(name: "switch2", value: "on", isStateChange: true, display: false)
+                    currstate2 = "on"
+               }
             currstate1 = device.currentState("switch1").getValue()
-            currstate2 = device.currentState("switch2").getValue()
             currstate3 = device.currentState("switch3").getValue()
             currstate4 = device.currentState("switch4").getValue()
             currstate5 = device.currentState("switch5").getValue()
             currstate6 = device.currentState("switch6").getValue()
-            if (currstate1 == "on" || currstate2 == "on" || currstate3 == "on" || currstate4 == "on" || currstate5 == "on" || currstate6 == "on"){
+            
+            
+              if (currstate1 == "on" || currstate2 == "on" || currstate3 == "on" || currstate4 == "on" || currstate5 == "on" || currstate6 == "on"){
                sendEvent(name: "switch", value: "on", isStateChange: true, display: false)
-           }
+               }
+               else{
+                  sendEvent(name: "switch", value: "off", isStateChange: true, display: false) 
+               }
            }
          
            else if (cmd.parameter.first() == 0){
-        	sendEvent(name: "switch2", value: "off", isStateChange: true, display: false)
+               if (currstate2 == "on"){
+        	        sendEvent(name: "switch2", value: "off", isStateChange: true, display: false)
+                    currstate2 = "off"
+               }
             currstate1 = device.currentState("switch1").getValue()
-            currstate2 = device.currentState("switch2").getValue()
             currstate3 = device.currentState("switch3").getValue()
             currstate4 = device.currentState("switch4").getValue()
             currstate5 = device.currentState("switch5").getValue()
             currstate6 = device.currentState("switch6").getValue()
+            
             if (currstate1 == "off" && currstate2 == "off" && currstate3 == "off" && currstate4 == "off" && currstate5 == "off" && currstate6 == "off"){
                sendEvent(name: "switch", value: "off", isStateChange: true, display: false)
-           }
+               }
+               else{
+               sendEvent(name: "switch", value: "on", isStateChange: true, display: false)
+               }
            }
        }
   
            else if (cmd.sourceEndPoint == 1 ) {
 
         if (cmd.parameter.first() > 180){
-        	sendEvent(name: "switch1", value: "on", isStateChange: true, display: false)
-            currstate1 = device.currentState("switch1").getValue()
+        	if (currstate1 == "off"){
+                sendEvent(name: "switch1", value: "on", isStateChange: true, display: false)
+                currstate1 = "on"
+            }
+
             currstate2 = device.currentState("switch2").getValue()
             currstate3 = device.currentState("switch3").getValue()
             currstate4 = device.currentState("switch4").getValue()
             currstate5 = device.currentState("switch5").getValue()
             currstate6 = device.currentState("switch6").getValue()
+            
+            
             if (currstate1 == "on" || currstate2 == "on" || currstate3 == "on" || currstate4 == "on" || currstate5 == "on" || currstate6 == "on"){
-               sendEvent(name: "switch", value: "on", isStateChange: true, display: false)
-           }
+                sendEvent(name: "switch", value: "on", isStateChange: true, display: false)
+               }
+            else{
+                sendEvent(name: "switch", value: "off", isStateChange: true, display: false)
+            }
         }
         else if (cmd.parameter.first() == 0){
-        	sendEvent(name: "switch1", value: "off", isStateChange: true, display: false)
-            currstate1 = device.currentState("switch1").getValue()
+            if (currstate1 == "on"){
+        	    sendEvent(name: "switch1", value: "off", isStateChange: true, display: false)
+                currstate1 = "off"
+            }
+
             currstate2 = device.currentState("switch2").getValue()
             currstate3 = device.currentState("switch3").getValue()
             currstate4 = device.currentState("switch4").getValue()
             currstate5 = device.currentState("switch5").getValue()
             currstate6 = device.currentState("switch6").getValue()
+            
             if (currstate1 == "off" && currstate2 == "off" && currstate3 == "off" && currstate4 == "off" && currstate5 == "off" && currstate6 == "off"){
-               sendEvent(name: "switch", value: "off", isStateChange: true, display: false)
-           }
+            sendEvent(name: "switch", value: "off", isStateChange: true, display: false)
+               }
+            else{
+            sendEvent(name: "switch", value: "on", isStateChange: true, display: false)
+            }
         }
            }
      else if (cmd.sourceEndPoint == 3 ) {
 
         if (cmd.parameter.first() > 180){
+            if (currstate3 == "off"){
         	sendEvent(name: "switch3", value: "on", isStateChange: true, display: false)
+            currstate3 = "on"
+            }
             currstate1 = device.currentState("switch1").getValue()
             currstate2 = device.currentState("switch2").getValue()
-            currstate3 = device.currentState("switch3").getValue()
             currstate4 = device.currentState("switch4").getValue()
             currstate5 = device.currentState("switch5").getValue()
             currstate6 = device.currentState("switch6").getValue()
             if (currstate1 == "on" || currstate2 == "on" || currstate3 == "on" || currstate4 == "on" || currstate5 == "on" || currstate6 == "on"){
                sendEvent(name: "switch", value: "on", isStateChange: true, display: false)
            }
+                        else{
+                sendEvent(name: "switch", value: "off", isStateChange: true, display: false)
+            }
         }
         else if (cmd.parameter.first() == 0){
+            if (currstate3 == "on"){
         	sendEvent(name: "switch3", value: "off", isStateChange: true, display: false)
+            currstate3 = "off"
+            }
             currstate1 = device.currentState("switch1").getValue()
             currstate2 = device.currentState("switch2").getValue()
-            currstate3 = device.currentState("switch3").getValue()
             currstate4 = device.currentState("switch4").getValue()
             currstate5 = device.currentState("switch5").getValue()
             currstate6 = device.currentState("switch6").getValue()
+            
             if (currstate1 == "off" && currstate2 == "off" && currstate3 == "off" && currstate4 == "off" && currstate5 == "off" && currstate6 == "off"){
                sendEvent(name: "switch", value: "off", isStateChange: true, display: false)
            }
+                          else{
+               sendEvent(name: "switch", value: "on", isStateChange: true, display: false)
+               }
         }
      }
      else if (cmd.sourceEndPoint == 4 ) {
 
         if (cmd.parameter.first() > 180){
+            if (currstate4 == "off"){
         	sendEvent(name: "switch4", value: "on", isStateChange: true, display: false)
+            currstate4 = "on"
+            }
             currstate1 = device.currentState("switch1").getValue()
             currstate2 = device.currentState("switch2").getValue()
             currstate3 = device.currentState("switch3").getValue()
-            currstate4 = device.currentState("switch4").getValue()
             currstate5 = device.currentState("switch5").getValue()
             currstate6 = device.currentState("switch6").getValue()
+            
             if (currstate1 == "on" || currstate2 == "on" || currstate3 == "on" || currstate4 == "on" || currstate5 == "on" || currstate6 == "on"){
                sendEvent(name: "switch", value: "on", isStateChange: true, display: false)
            }
+                        else{
+                sendEvent(name: "switch", value: "off", isStateChange: true, display: false)
+            }
         }
         else if (cmd.parameter.first() == 0){
+            if (currstate4 == "on"){
         	sendEvent(name: "switch4", value: "off", isStateChange: true, display: false)
+            currstate2 = "off"
+            }
             currstate1 = device.currentState("switch1").getValue()
             currstate2 = device.currentState("switch2").getValue()
             currstate3 = device.currentState("switch3").getValue()
-            currstate4 = device.currentState("switch4").getValue()
             currstate5 = device.currentState("switch5").getValue()
             currstate6 = device.currentState("switch6").getValue()
+            
             if (currstate1 == "off" && currstate2 == "off" && currstate3 == "off" && currstate4 == "off" && currstate5 == "off" && currstate6 == "off"){
                sendEvent(name: "switch", value: "off", isStateChange: true, display: false)
            }
+                          else{
+               sendEvent(name: "switch", value: "on", isStateChange: true, display: false)
+               }
         } 
      }
       else if (cmd.sourceEndPoint == 5 ) {
 
         if (cmd.parameter.first() > 180){
-         //   log.debug("got here")
-        	sendEvent(name: "switch5", value: "on", isStateChange: true, display: false)
+             if (currstate5 == "off"){
+        	    sendEvent(name: "switch5", value: "on", isStateChange: true, display: false)
+                currstate5 = "on"
+             }
             currstate1 = device.currentState("switch1").getValue()
             currstate2 = device.currentState("switch2").getValue()
             currstate3 = device.currentState("switch3").getValue()
             currstate4 = device.currentState("switch4").getValue()
-            currstate5 = device.currentState("switch5").getValue()
             currstate6 = device.currentState("switch6").getValue()
             if (currstate1 == "on" || currstate2 == "on" || currstate3 == "on" || currstate4 == "on" || currstate5 == "on" || currstate6 == "on"){
                sendEvent(name: "switch", value: "on", isStateChange: true, display: false)
            }
+                        else{
+                sendEvent(name: "switch", value: "off", isStateChange: true, display: false)
+            }
         }
+          
         else if (cmd.parameter.first() == 0){
-        	sendEvent(name: "switch5", value: "off", isStateChange: true, display: false)
+            if (currstate5 == "on"){
+        	    sendEvent(name: "switch5", value: "off", isStateChange: true, display: false)
+                currstate2 = "off"
+            }
             currstate1 = device.currentState("switch1").getValue()
             currstate2 = device.currentState("switch2").getValue()
             currstate3 = device.currentState("switch3").getValue()
             currstate4 = device.currentState("switch4").getValue()
-            currstate5 = device.currentState("switch5").getValue()
             currstate6 = device.currentState("switch6").getValue()
             if (currstate1 == "off" && currstate2 == "off" && currstate3 == "off" && currstate4 == "off" && currstate5 == "off" && currstate6 == "off"){
                sendEvent(name: "switch", value: "off", isStateChange: true, display: false)
            }
+                          else{
+               sendEvent(name: "switch", value: "on", isStateChange: true, display: false)
+               }
         } 
       }
      else if (cmd.sourceEndPoint == 6 ) {
 
         if (cmd.parameter.first() > 180){
+            if (currstate6 == "off"){
         	sendEvent(name: "switch6", value: "on", isStateChange: true, display: false)
+            currstate6 = "on"
+            }
             currstate1 = device.currentState("switch1").getValue()
             currstate2 = device.currentState("switch2").getValue()
             currstate3 = device.currentState("switch3").getValue()
             currstate4 = device.currentState("switch4").getValue()
             currstate5 = device.currentState("switch5").getValue()
-            currstate6 = device.currentState("switch6").getValue()
+            
             if (currstate1 == "on" || currstate2 == "on" || currstate3 == "on" || currstate4 == "on" || currstate5 == "on" || currstate6 == "on"){
                sendEvent(name: "switch", value: "on", isStateChange: true, display: false)
            }
+                        else{
+                sendEvent(name: "switch", value: "off", isStateChange: true, display: false)
+            }
         }
         else if (cmd.parameter.first() == 0){
+            if (currstate6 == "on"){
         	sendEvent(name: "switch6", value: "off", isStateChange: true, display: false)
+            currstate6 = "off"
+            }
             currstate1 = device.currentState("switch1").getValue()
             currstate2 = device.currentState("switch2").getValue()
             currstate3 = device.currentState("switch3").getValue()
             currstate4 = device.currentState("switch4").getValue()
             currstate5 = device.currentState("switch5").getValue()
-            currstate6 = device.currentState("switch6").getValue()
+
             if (currstate1 == "off" && currstate2 == "off" && currstate3 == "off" && currstate4 == "off" && currstate5 == "off" && currstate6 == "off"){
                sendEvent(name: "switch", value: "off", isStateChange: true, display: false)
            }
+                          else{
+               sendEvent(name: "switch", value: "on", isStateChange: true, display: false)
+               }
         }
     }
-  /*  switch(cmd.commandClass) {
-      case 32:
-         if (cmd.parameter == [0]) {
-            map.value = "off"
-         }
-         if (cmd.parameter == [255]) {
-            map.value = "on"
-         }
-         createEvent(map)
-         break
-      case 37:
-         if (cmd.parameter == [0]) {
-            map.value = "off"
-         }
-         if (cmd.parameter == [255]) {
-            map.value = "on"
-         }
-         break
-    }
-    def events = [createEvent(map)]
-    if (map.value == "on") {
-            events += [createEvent([name: "switch", value: "on"])]
-    } else {
-         def allOff = true
-         (1..2).each { n ->
-             if (n != cmd.sourceEndPoint) {
-                 if (device.currentState("switch${n}").value != "off") allOff = false
-             }
-         }
-         if (allOff) {
-             events += [createEvent([name: "switch", value: "off"])]
-         }
-    }
-    events*/
-    
-  //  zwave.wakeUpV2.wakeUpNoMoreInformation().format()
+
 }
 
 def zwaveEvent(hubitat.zwave.Command cmd) {
     // This will capture any commands not handled by other instances of zwaveEvent
     // and is recommended for development so you can see every command the device sends
-  //   log.debug(cmd)
-    return createEvent(descriptionText: "${device.displayName}: ${cmd}")
+  //  log.debug(cmd)
+ //   return createEvent(descriptionText: "${device.displayName}: ${cmd}")
 }
 
 def zwaveEvent(hubitat.zwave.commands.switchallv1.SwitchAllReport cmd) {
@@ -367,22 +430,33 @@ def zwaveEvent(hubitat.zwave.commands.switchallv1.SwitchAllReport cmd) {
 
 def zwaveEvent(hubitat.zwave.commands.sensorbinaryv2.SensorBinaryReport cmd)
 {
+   def sensState = device.currentState("binarySensor").getValue()
+    
    if (cmd.sensorValue == 0 ) {
+       if (sensState == "on"){
        sendEvent(name: "binarySensor", value: "off", isStateChange: true, display: false)
+       }
    }
    else if(cmd.sensorValue == 255 ) {
+       if (sensState == "off"){
        sendEvent(name: "binarySensor", value: "on", isStateChange: true, display: false)
+       }
    }
 }
 
 def zwaveEvent(hubitat.zwave.commands.notificationv3.NotificationReport cmd)
 {
-
+    def sensState = device.currentState("binarySensor").getValue()
+    
        if (cmd.notificationType == 6 && event == 23 ) {
+           if (sensState == "on"){
        sendEvent(name: "binarySensor", value: "off", isStateChange: true, display: false)
+           }
    }
    else if(cmd.notificationType == 6 && cmd.event == 22 ) {
+       if (sensState == "on"){
        sendEvent(name: "binarySensor", value: "on", isStateChange: true, display: false)
+       }
    }
 }
 
@@ -403,10 +477,15 @@ def refresh() {
 }
 
 def refreshBinary() {
-    zwave.sensorBinaryV2.sensorBinaryGet().format() 
+    
+    logDebug("Refresh Binary called")
+    zwave.sensorBinaryV2.sensorBinaryGet().format()
+
+    
 }
 
 def testButton(){
+    
     //  zwave.multiChannelV3.multiChannelCmdEncap(destinationEndPoint:0, commandClass:32, command:1, parameter:[0]).format()
  //zwave.multiChannelV3.multiChannelCapabilityGet(endPoint:1).format()
  //   zwave.sensorBinaryV2.sensorBinaryGet().format() 
@@ -419,14 +498,21 @@ def testButton(){
     
     
     def cmds = []
-  //  cmds +=  zwave.notificationV3.notificationSupportedGet().format()
+    cmds +=  zwave.notificationV3.notificationGet(notificationType: 6).format()
  //   cmds +=  zwave.configurationV1.configurationSet(parameterNumber: 72, configurationValue:[0, 0, 128, 1], size:4).format()
   //  cmds +=  zwave.configurationV1.configurationGet(parameterNumber: 72).format()
    // cmds +=  zwave.configurationV1.configurationGet(parameterNumber: 1).format()
  //   cmds +=  zwave.configurationV1.configurationGet(parameterNumber: 2).format()
    // cmds +=  zwave.configurationV1.configurationGet(parameterNumber: 20).format()
+    //  cmds +=  zwave.associationV2.associationRemove(groupingIdentifier: 1, nodeId: zwaveHubNodeId ).format()
+  //    cmds +=  zwave.associationV2.associationRemove(groupingIdentifier: 2, nodeId: zwaveHubNodeId ).format()
+  //  cmds +=  zwave.associationV2.associationRemove(groupingIdentifier: 0, nodeId: zwaveHubNodeId ).format()
+  //  cmds +=  zwave.multiChannelAssociationV2.multiChannelAssociationGet(groupingIdentifier: 1).format()
+  //  cmds +=  zwave.multiChannelAssociationV2.multiChannelAssociationRemove(groupingIdentifier:1, nodeId: [10]).format()
+   //   cmds +=  zwave.associationV2.associationSet(groupingIdentifier: 1, nodeId: zwaveHubNodeId ).format()
+   //   cmds +=  zwave.associationV2.associationSet(groupingIdentifier: 2, nodeId: zwaveHubNodeId ).format()
 
-      cmds +=  zwave.notificationV3.notificationSet(sensorType:2, notificationStatus:0).format()
+   //   cmds +=  zwave.notificationV3.notificationSet(sensorType:2, notificationStatus:0).format()
     
         if (cmds) return delayBetween(cmds, 750)
     
@@ -462,17 +548,13 @@ def poll() {
 def configure() {
 //	log.debug "Executing 'configure'"
     
-  /*  delayBetween([
-        zwave.configurationV1.configurationGet(parameterNumber:1).format(),
-        zwave.configurationV1.configurationGet(parameterNumber:2).format(),
-        zwave.configurationV1.configurationGet(parameterNumber:3).format(),
-        zwave.configurationV1.configurationGet(parameterNumber:4).format(),
-        zwave.configurationV1.configurationGet(parameterNumber:5).format(),
-        zwave.configurationV1.configurationGet(parameterNumber:6).format(),
-        zwave.configurationV1.configurationGet(parameterNumber:7).format(), 
-        zwave.associationV1.associationGet().format(),
-      
-    ],500)  */
+    def cmds = []
+
+        cmds +=  zwave.associationV2.associationRemove(groupingIdentifier: 1, nodeId: zwaveHubNodeId ).format()
+        cmds +=  zwave.associationV2.associationSet(groupingIdentifier: 2, nodeId: zwaveHubNodeId ).format()
+    
+        if (cmds) return delayBetween(cmds, 750)
+    
 }
 
 def updateSingleparam(paramNum, paramValue) {
@@ -488,6 +570,7 @@ def updated()
 //	log.debug "Preferences have been changed. Attempting configure()"
  //   def cmds = configure()
  //   response(cmds)
+     if (debugOutput) runIn(1800,logsOff)  
 }
 def on() { 
    delayBetween([
@@ -502,8 +585,7 @@ def on() {
         zwave.multiChannelV3.multiChannelCmdEncap(sourceEndPoint:4, destinationEndPoint:4, commandClass:37, command:1, parameter:[255]).format(),
         zwave.multiChannelV3.multiChannelCmdEncap(sourceEndPoint:4, destinationEndPoint:4, commandClass:37, command:2).format(),
         zwave.multiChannelV3.multiChannelCmdEncap(sourceEndPoint:1, destinationEndPoint:1, commandClass:37, command:1, parameter:[255]).format(),
-        zwave.multiChannelV3.multiChannelCmdEncap(sourceEndPoint:1, destinationEndPoint:1, commandClass:37, command:2).format(),
-        zwave.switchAllV1.switchAllOn().format()
+        zwave.multiChannelV3.multiChannelCmdEncap(sourceEndPoint:1, destinationEndPoint:1, commandClass:37, command:2).format()
 
     ], 500)
 }
@@ -521,34 +603,166 @@ def off() {
         zwave.multiChannelV3.multiChannelCmdEncap(sourceEndPoint:3, destinationEndPoint:3, commandClass:37, command:2).format(),
         zwave.multiChannelV3.multiChannelCmdEncap(sourceEndPoint:5, destinationEndPoint:5, commandClass:37, command:2).format(),
         zwave.multiChannelV3.multiChannelCmdEncap(sourceEndPoint:6, destinationEndPoint:6, commandClass:37, command:2).format(),
-        zwave.multiChannelV3.multiChannelCmdEncap(sourceEndPoint:4, destinationEndPoint:4, commandClass:37, command:2).format(), 
-        zwave.switchAllV1.switchAllOff().format()
+        zwave.multiChannelV3.multiChannelCmdEncap(sourceEndPoint:4, destinationEndPoint:4, commandClass:37, command:2).format()
 
     ], 550)
 }
 
+
 def on1() {
+    
+// Work in Progress multiway single on functionality in driver
+    
+    if (SwitchMode1 == "0"){
+     
+    logDebug("switch mode is normal for 1, proceeding regardless of other switch states")
+    runIn(7, refreshBinary)
+    
     delayBetween([
         zwave.multiChannelV3.multiChannelCmdEncap(destinationEndPoint:1, commandClass:37, command:1, parameter:[255]).format(),
         zwave.multiChannelV3.multiChannelCmdEncap(destinationEndPoint:1, commandClass:37, command:2).format()
-    ], 500)
+    ], 600)
+        
+    }
+    else if (SwitchMode1 == "1"){
+       
+        def switchState2 = "proceed"
+        def switchState3 = "proceed"
+        def switchState4 = "proceed"
+        def switchState5 = "proceed"
+        def switchState6 = "proceed"
+        
+        currstate2 = device.currentState("switch2").getValue()
+        currstate3 = device.currentState("switch3").getValue()
+        currstate4 = device.currentState("switch4").getValue()
+        currstate5 = device.currentState("switch5").getValue()
+        currstate6 = device.currentState("switch6").getValue()
+                  
+        if (SwitchMode2 == "1" && currstate2 == "on") { 
+            switchState2 = "stop"
+            runIn(1, off2)
+        }
+        if (SwitchMode3 == "1" && currstate3 == "on") { 
+            runIn(1, off3)
+            switchState3 = "stop"
+        }
+        if (SwitchMode4 == "1" && currstate4 == "on") { 
+            runIn(1, off4)
+            switchState4 = "stop"
+        }
+        if (SwitchMode5 == "1" && currstate5 == "on") { 
+            runIn(1, off5)
+            switchState5 = "stop"
+        }
+        if (SwitchMode6 == "1" && currstate6 == "on") { 
+            runIn(1, off6)
+            switchState6 = "stop"
+        }      
+        
+        if (switchState2 == "proceed" && switchState3 == "proceed" && switchState4 == "proceed" && switchState5 == "proceed" && switchState6 == "proceed"){
+                
+                logDebug("All other multiway switches are off so good to go - turning on 1")
+                runIn(7, refreshBinary)
+    
+                delayBetween([
+                    zwave.multiChannelV3.multiChannelCmdEncap(destinationEndPoint:1, commandClass:37, command:1, parameter:[255]).format(),
+                    zwave.multiChannelV3.multiChannelCmdEncap(destinationEndPoint:1, commandClass:37, command:2).format()
+                    ], 600)
+        
+        }
+        else {
+            //log.debug("not all proceed, repeating")
+            logDebug("not all multiway switches off so cannot proceed, repeating")
+            runIn(8, on1)
+          
+        }
+    } 
 }
 
 def off1() {
+    
+    logDebug("turning off 1")
+    runIn(7, refreshBinary)
+    
     delayBetween([
         zwave.multiChannelV3.multiChannelCmdEncap(destinationEndPoint:1, commandClass:37, command:1, parameter:[0]).format(),
         zwave.multiChannelV3.multiChannelCmdEncap(destinationEndPoint:1, commandClass:37, command:2).format()
-    ], 500)
+    ], 600)
 }
 
 def on2() {
+    
+    if (SwitchMode2 == "0"){
+     
+    logDebug("switch mode is normal for 2, proceeding regardless of other switch states")
+    runIn(7, refreshBinary)
+    
     delayBetween([
         zwave.multiChannelV3.multiChannelCmdEncap(destinationEndPoint:2, commandClass:37, command:1, parameter:[255]).format(),
         zwave.multiChannelV3.multiChannelCmdEncap(destinationEndPoint:2, commandClass:37, command:2).format()
     ], 500)
+        
+    }
+    else if (SwitchMode2 == "1"){
+       
+        def switchState1 = "proceed"
+        def switchState3 = "proceed"
+        def switchState4 = "proceed"
+        def switchState5 = "proceed"
+        def switchState6 = "proceed"
+        
+        currstate1 = device.currentState("switch1").getValue()
+        currstate3 = device.currentState("switch3").getValue()
+        currstate4 = device.currentState("switch4").getValue()
+        currstate5 = device.currentState("switch5").getValue()
+        currstate6 = device.currentState("switch6").getValue()
+                  
+        if (SwitchMode1 == "1" && currstate1 == "on") { 
+            switchState1 = "stop"
+            runIn(1, off1)
+        }
+        if (SwitchMode3 == "1" && currstate3 == "on") { 
+            runIn(1, off3)
+            switchState3 = "stop"
+        }
+        if (SwitchMode4 == "1" && currstate4 == "on") { 
+            runIn(1, off4)
+            switchState4 = "stop"
+        }
+        if (SwitchMode5 == "1" && currstate5 == "on") { 
+            runIn(1, off5)
+            switchState5 = "stop"
+        }
+        if (SwitchMode6 == "1" && currstate6 == "on") { 
+            runIn(1, off6)
+            switchState6 = "stop"
+        }      
+        
+        if (switchState1 == "proceed" && switchState3 == "proceed" && switchState4 == "proceed" && switchState5 == "proceed" && switchState6 == "proceed"){
+                
+                //log.debug("good to go - turning on")  
+                logDebug("All other multiway switches are off so good to go - turning on 2")
+                runIn(7, refreshBinary)
+    
+                delayBetween([
+                    zwave.multiChannelV3.multiChannelCmdEncap(destinationEndPoint:2, commandClass:37, command:1, parameter:[255]).format(),
+                    zwave.multiChannelV3.multiChannelCmdEncap(destinationEndPoint:2, commandClass:37, command:2).format()
+                    ], 600)
+        
+        }
+        else {
+            //log.debug("not all proceed, repeating")
+            logDebug("not all multiway switches off so cannot proceed, repeating")
+            runIn(8, on2)
+          
+        }
+    } 
 }
 
 def off2() {
+    
+    logDebug("turning off 2")
+    runIn(7, refreshBinary)
     delayBetween([
         zwave.multiChannelV3.multiChannelCmdEncap(destinationEndPoint:2, commandClass:37, command:1, parameter:[0]).format(),
         zwave.multiChannelV3.multiChannelCmdEncap(destinationEndPoint:2, commandClass:37, command:2).format()
@@ -556,13 +770,78 @@ def off2() {
 }
 
 def on3() {
+    
+    if (SwitchMode3 == "0"){
+     
+    logDebug("switch mode is normal for 3, proceeding regardless of other switch states")
+    runIn(7, refreshBinary)
+    
     delayBetween([
         zwave.multiChannelV3.multiChannelCmdEncap(destinationEndPoint:3, commandClass:37, command:1, parameter:[255]).format(),
         zwave.multiChannelV3.multiChannelCmdEncap(destinationEndPoint:3, commandClass:37, command:2).format()
     ], 500)
+        
+    }
+    else if (SwitchMode3 == "1"){
+       
+        def switchState1 = "proceed"
+        def switchState2 = "proceed"
+        def switchState4 = "proceed"
+        def switchState5 = "proceed"
+        def switchState6 = "proceed"
+        
+        currstate1 = device.currentState("switch1").getValue()
+        currstate2 = device.currentState("switch2").getValue()
+        currstate4 = device.currentState("switch4").getValue()
+        currstate5 = device.currentState("switch5").getValue()
+        currstate6 = device.currentState("switch6").getValue()
+                  
+        if (SwitchMode1 == "1" && currstate1 == "on") { 
+            switchState1 = "stop"
+            runIn(1, off1)
+        }
+        if (SwitchMode2 == "1" && currstate2 == "on") { 
+            runIn(1, off2)
+            switchState2 = "stop"
+        }
+        if (SwitchMode4 == "1" && currstate4 == "on") { 
+            runIn(1, off4)
+            switchState4 = "stop"
+        }
+        if (SwitchMode5 == "1" && currstate5 == "on") { 
+            runIn(1, off5)
+            switchState5 = "stop"
+        }
+        if (SwitchMode6 == "1" && currstate6 == "on") { 
+            runIn(1, off6)
+            switchState6 = "stop"
+        }      
+        
+        if (switchState1 == "proceed" && switchState2 == "proceed" && switchState4 == "proceed" && switchState5 == "proceed" && switchState6 == "proceed"){
+                
+                logDebug("All other multiway switches are off so good to go - turning on 3")
+                runIn(7, refreshBinary)
+    
+                delayBetween([
+                    zwave.multiChannelV3.multiChannelCmdEncap(destinationEndPoint:3, commandClass:37, command:1, parameter:[255]).format(),
+                    zwave.multiChannelV3.multiChannelCmdEncap(destinationEndPoint:3, commandClass:37, command:2).format()
+                    ], 600)
+        
+        }
+        else {
+
+            logDebug("not all multiway switches off so cannot proceed, repeating")
+            runIn(8, on3)
+          
+        }
+    } 
 }
 
 def off3() {
+    
+    logDebug("turning off 3")
+    runIn(7, refreshBinary)
+    
     delayBetween([
         zwave.multiChannelV3.multiChannelCmdEncap(destinationEndPoint:3, commandClass:37, command:1, parameter:[0]).format(),
         zwave.multiChannelV3.multiChannelCmdEncap(destinationEndPoint:3, commandClass:37, command:2).format()
@@ -570,44 +849,241 @@ def off3() {
 }
 
 def on4() {
+    
+    if (SwitchMode4 == "0"){
+     
+    logDebug("switch mode is normal for 4, proceeding regardless of other switch states")
+    runIn(7, refreshBinary)
+    
     delayBetween([
         zwave.multiChannelV3.multiChannelCmdEncap(destinationEndPoint:4, commandClass:37, command:1, parameter:[255]).format(),
         zwave.multiChannelV3.multiChannelCmdEncap(destinationEndPoint:4, commandClass:37, command:2).format()
     ], 500)
+        
+    }
+    else if (SwitchMode4 == "1"){
+       
+        def switchState1 = "proceed"
+        def switchState2 = "proceed"
+        def switchState3 = "proceed"
+        def switchState5 = "proceed"
+        def switchState6 = "proceed"
+        
+        currstate1 = device.currentState("switch1").getValue()
+        currstate2 = device.currentState("switch2").getValue()
+        currstate3 = device.currentState("switch3").getValue()
+        currstate5 = device.currentState("switch5").getValue()
+        currstate6 = device.currentState("switch6").getValue()
+                  
+        if (SwitchMode1 == "1" && currstate1 == "on") { 
+            switchState1 = "stop"
+            runIn(1, off1)
+        }
+        if (SwitchMode2 == "1" && currstate2 == "on") { 
+            runIn(1, off2)
+            switchState2 = "stop"
+        }
+        if (SwitchMode3 == "1" && currstate3 == "on") { 
+            runIn(1, off3)
+            switchState3 = "stop"
+        }
+        if (SwitchMode5 == "1" && currstate5 == "on") { 
+            runIn(1, off5)
+            switchState5 = "stop"
+        }
+        if (SwitchMode6 == "1" && currstate6 == "on") { 
+            runIn(1, off6)
+            switchState6 = "stop"
+        }      
+        
+        if (switchState1 == "proceed" && switchState2 == "proceed" && switchState3 == "proceed" && switchState5 == "proceed" && switchState6 == "proceed"){
+                 
+                logDebug("All other multiway switches are off so good to go - turning on 4")
+                runIn(7, refreshBinary)
+    
+                delayBetween([
+                    zwave.multiChannelV3.multiChannelCmdEncap(destinationEndPoint:4, commandClass:37, command:1, parameter:[255]).format(),
+                    zwave.multiChannelV3.multiChannelCmdEncap(destinationEndPoint:4, commandClass:37, command:2).format()
+                    ], 600)
+        
+        }
+        else {
+
+            logDebug("not all multiway switches off so cannot proceed, repeating")
+            runIn(8, on4)
+          
+        }
+    }
+    
 }
 
 def off4() {
+    
+    logDebug("turning off 4")
+    runIn(7, refreshBinary)
+    
     delayBetween([
-        zwave.multiChannelV3.multiChannelCmdEncap(sourceEndPoint:4, destinationEndPoint:4, commandClass:37, command:1, parameter:[0]).format(),
-        zwave.multiChannelV3.multiChannelCmdEncap(sourceEndPoint:4, destinationEndPoint:4, commandClass:37, command:2).format()
+        zwave.multiChannelV3.multiChannelCmdEncap(destinationEndPoint:4, commandClass:37, command:1, parameter:[0]).format(),
+        zwave.multiChannelV3.multiChannelCmdEncap(destinationEndPoint:4, commandClass:37, command:2).format()
     ], 500)
 }
+
 def on5() {
+        
+    if (SwitchMode5 == "0"){
+     
+    logDebug("switch mode is normal for 5, proceeding regardless of other switch states")
+    runIn(7, refreshBinary)
+    
     delayBetween([
         zwave.multiChannelV3.multiChannelCmdEncap(destinationEndPoint:5, commandClass:37, command:1, parameter:[255]).format(),
         zwave.multiChannelV3.multiChannelCmdEncap(destinationEndPoint:5, commandClass:37, command:2).format()
     ], 500)
+        
+    }
+    else if (SwitchMode5 == "1"){
+       
+        def switchState1 = "proceed"
+        def switchState2 = "proceed"
+        def switchState3 = "proceed"
+        def switchState4 = "proceed"
+        def switchState6 = "proceed"
+        
+        currstate1 = device.currentState("switch1").getValue()
+        currstate2 = device.currentState("switch2").getValue()
+        currstate3 = device.currentState("switch3").getValue()
+        currstate4 = device.currentState("switch4").getValue()
+        currstate6 = device.currentState("switch6").getValue()
+                  
+        if (SwitchMode1 == "1" && currstate1 == "on") { 
+            switchState1 = "stop"
+            runIn(1, off1)
+        }
+        if (SwitchMode2 == "1" && currstate2 == "on") { 
+            runIn(1, off2)
+            switchState2 = "stop"
+        }
+        if (SwitchMode3 == "1" && currstate3 == "on") { 
+            runIn(1, off3)
+            switchState3 = "stop"
+        }
+        if (SwitchMode4 == "1" && currstate4 == "on") { 
+            runIn(1, off4)
+            switchState4 = "stop"
+        }
+        if (SwitchMode6 == "1" && currstate6 == "on") { 
+            runIn(1, off6)
+            switchState6 = "stop"
+        }      
+        
+        if (switchState1 == "proceed" && switchState2 == "proceed" && switchState3 == "proceed" && switchState4 == "proceed" && switchState6 == "proceed"){
+                 
+                logDebug("All other multiway switches are off so good to go - turning on 5")
+                runIn(7, refreshBinary)
+    
+                delayBetween([
+                    zwave.multiChannelV3.multiChannelCmdEncap(destinationEndPoint:5, commandClass:37, command:1, parameter:[255]).format(),
+                    zwave.multiChannelV3.multiChannelCmdEncap(destinationEndPoint:5, commandClass:37, command:2).format()
+                    ], 600)
+        
+        }
+        else {
+
+            logDebug("not all multiway switches off so cannot proceed, repeating")
+            runIn(8, on5)
+          
+        }
+    }
+    
 }
 
 def off5() {
+    
+    logDebug("turning off 5")
+    runIn(7, refreshBinary)
+    
     delayBetween([
         zwave.multiChannelV3.multiChannelCmdEncap(destinationEndPoint:5, commandClass:37, command:1, parameter:[0]).format(),
         zwave.multiChannelV3.multiChannelCmdEncap(destinationEndPoint:5, commandClass:37, command:2).format()
     ], 500)
 }
 def on6() {
+    
+    if (SwitchMode6 == "0"){
+     
+    logDebug("switch mode is normal for 6, proceeding regardless of other switch states")
+    runIn(7, refreshBinary)
+    
     delayBetween([
         zwave.multiChannelV3.multiChannelCmdEncap(destinationEndPoint:6, commandClass:32, command:1, parameter:[255]).format(),
-        zwave.multiChannelV3.multiChannelCmdEncap(destinationEndPoint:6, commandClass:32, command:2).format(),
-        zwave.wakeUpV2.wakeUpNoMoreInformation().format()
+        zwave.multiChannelV3.multiChannelCmdEncap(destinationEndPoint:6, commandClass:32, command:2).format()
     ], 500)
+        
+    }
+    
+    else if (SwitchMode6 == "1"){
+       
+        def switchState1 = "proceed"
+        def switchState2 = "proceed"
+        def switchState3 = "proceed"
+        def switchState4 = "proceed"
+        def switchState5 = "proceed"
+        
+        currstate1 = device.currentState("switch1").getValue()
+        currstate2 = device.currentState("switch2").getValue()
+        currstate3 = device.currentState("switch3").getValue()
+        currstate4 = device.currentState("switch4").getValue()
+        currstate5 = device.currentState("switch5").getValue()
+                  
+        if (SwitchMode1 == "1" && currstate1 == "on") { 
+            switchState1 = "stop"
+            runIn(1, off1)
+        }
+        if (SwitchMode2 == "1" && currstate2 == "on") { 
+            runIn(1, off2)
+            switchState2 = "stop"
+        }
+        if (SwitchMode3 == "1" && currstate3 == "on") { 
+            runIn(1, off3)
+            switchState3 = "stop"
+        }
+        if (SwitchMode4 == "1" && currstate4 == "on") { 
+            runIn(1, off4)
+            switchState4 = "stop"
+        }
+        if (SwitchMode5 == "1" && currstate5 == "on") { 
+            runIn(1, off5)
+            switchState5 = "stop"
+        }      
+        
+        if (switchState1 == "proceed" && switchState2 == "proceed" && switchState3 == "proceed" && switchState4 == "proceed" && switchState5 == "proceed"){
+                 
+                logDebug("All other multiway switches are off so good to go - turning on 6")
+                runIn(7, refreshBinary)
+    
+                delayBetween([
+                    zwave.multiChannelV3.multiChannelCmdEncap(destinationEndPoint:6, commandClass:37, command:1, parameter:[255]).format(),
+                    zwave.multiChannelV3.multiChannelCmdEncap(destinationEndPoint:6, commandClass:37, command:2).format()
+                    ], 600)
+        
+        }
+        else {
+
+            logDebug("not all multiway switches off so cannot proceed, repeating")
+            runIn(8, on6)
+          
+        }
+    }
 }
 
 def off6() {
+    
+    logDebug("turning off 6")
+    runIn(7, refreshBinary)
+    
     delayBetween([
         zwave.multiChannelV3.multiChannelCmdEncap(destinationEndPoint:6, commandClass:32, command:1, parameter:[0]).format(),
-        zwave.multiChannelV3.multiChannelCmdEncap(destinationEndPoint:6, commandClass:32, command:2).format(),
-        zwave.wakeUpV2.wakeUpNoMoreInformation().format()
+        zwave.multiChannelV3.multiChannelCmdEncap(destinationEndPoint:6, commandClass:32, command:2).format()
     ], 500)
 }
 
@@ -633,4 +1109,15 @@ def indRefresh5() {
 
 def indRefresh6() {
     zwave.multiChannelV3.multiChannelCmdEncap(destinationEndPoint:6, commandClass:37, command:2).format()
+}
+
+def logsOff(){
+    log.warn "debug logging disabled..."
+    device.updateSetting("debugOutput",[value:"false",type:"bool"])
+}
+
+private logDebug(msg) {
+	if (settings?.debugOutput || settings?.debugOutput == null) {
+		log.debug "$msg"
+	}
 }
