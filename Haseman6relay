@@ -4,7 +4,7 @@
  *  
  *  
  *	Author: Adam Vine
- *	Date: 2020-02-23 
+ *	Date: 2020-02-27 
  */
  
 metadata {
@@ -180,7 +180,7 @@ def zwaveEvent(hubitat.zwave.commands.multichannelv3.MultiChannelCmdEncap cmd) {
 
            if (cmd.parameter.first() > 180){
                if (currstate2 == "off"){
-        	        sendEvent(name: "switch2", value: "on", isStateChange: true, display: false)
+        	        sendEvent(name: "switch2", value: "on")
                     currstate2 = "on"
                }
             currstate1 = device.currentState("switch1").getValue()
@@ -191,16 +191,16 @@ def zwaveEvent(hubitat.zwave.commands.multichannelv3.MultiChannelCmdEncap cmd) {
             
             
               if (currstate1 == "on" || currstate2 == "on" || currstate3 == "on" || currstate4 == "on" || currstate5 == "on" || currstate6 == "on"){
-               sendEvent(name: "switch", value: "on", isStateChange: true, display: false)
+               sendEvent(name: "switch", value: "on")
                }
                else{
-                  sendEvent(name: "switch", value: "off", isStateChange: true, display: false) 
+                  sendEvent(name: "switch", value: "off") 
                }
            }
          
            else if (cmd.parameter.first() == 0){
                if (currstate2 == "on"){
-        	        sendEvent(name: "switch2", value: "off", isStateChange: true, display: false)
+        	        sendEvent(name: "switch2", value: "off")
                     currstate2 = "off"
                }
             currstate1 = device.currentState("switch1").getValue()
@@ -210,10 +210,10 @@ def zwaveEvent(hubitat.zwave.commands.multichannelv3.MultiChannelCmdEncap cmd) {
             currstate6 = device.currentState("switch6").getValue()
             
             if (currstate1 == "off" && currstate2 == "off" && currstate3 == "off" && currstate4 == "off" && currstate5 == "off" && currstate6 == "off"){
-               sendEvent(name: "switch", value: "off", isStateChange: true, display: false)
+               sendEvent(name: "switch", value: "off")
                }
                else{
-               sendEvent(name: "switch", value: "on", isStateChange: true, display: false)
+               sendEvent(name: "switch", value: "on")
                }
            }
        }
@@ -222,7 +222,7 @@ def zwaveEvent(hubitat.zwave.commands.multichannelv3.MultiChannelCmdEncap cmd) {
 
         if (cmd.parameter.first() > 180){
         	if (currstate1 == "off"){
-                sendEvent(name: "switch1", value: "on", isStateChange: true, display: false)
+                sendEvent(name: "switch1", value: "on")
                 currstate1 = "on"
             }
 
@@ -234,15 +234,15 @@ def zwaveEvent(hubitat.zwave.commands.multichannelv3.MultiChannelCmdEncap cmd) {
             
             
             if (currstate1 == "on" || currstate2 == "on" || currstate3 == "on" || currstate4 == "on" || currstate5 == "on" || currstate6 == "on"){
-                sendEvent(name: "switch", value: "on", isStateChange: true, display: false)
+                sendEvent(name: "switch", value: "on")
                }
             else{
-                sendEvent(name: "switch", value: "off", isStateChange: true, display: false)
+                sendEvent(name: "switch", value: "off")
             }
         }
         else if (cmd.parameter.first() == 0){
             if (currstate1 == "on"){
-        	    sendEvent(name: "switch1", value: "off", isStateChange: true, display: false)
+        	    sendEvent(name: "switch1", value: "off")
                 currstate1 = "off"
             }
 
@@ -253,10 +253,10 @@ def zwaveEvent(hubitat.zwave.commands.multichannelv3.MultiChannelCmdEncap cmd) {
             currstate6 = device.currentState("switch6").getValue()
             
             if (currstate1 == "off" && currstate2 == "off" && currstate3 == "off" && currstate4 == "off" && currstate5 == "off" && currstate6 == "off"){
-            sendEvent(name: "switch", value: "off", isStateChange: true, display: false)
+            sendEvent(name: "switch", value: "off")
                }
             else{
-            sendEvent(name: "switch", value: "on", isStateChange: true, display: false)
+            sendEvent(name: "switch", value: "on")
             }
         }
            }
@@ -264,7 +264,7 @@ def zwaveEvent(hubitat.zwave.commands.multichannelv3.MultiChannelCmdEncap cmd) {
 
         if (cmd.parameter.first() > 180){
             if (currstate3 == "off"){
-        	sendEvent(name: "switch3", value: "on", isStateChange: true, display: false)
+        	sendEvent(name: "switch3", value: "on")
             currstate3 = "on"
             }
             currstate1 = device.currentState("switch1").getValue()
@@ -273,15 +273,15 @@ def zwaveEvent(hubitat.zwave.commands.multichannelv3.MultiChannelCmdEncap cmd) {
             currstate5 = device.currentState("switch5").getValue()
             currstate6 = device.currentState("switch6").getValue()
             if (currstate1 == "on" || currstate2 == "on" || currstate3 == "on" || currstate4 == "on" || currstate5 == "on" || currstate6 == "on"){
-               sendEvent(name: "switch", value: "on", isStateChange: true, display: false)
+               sendEvent(name: "switch", value: "on")
            }
                         else{
-                sendEvent(name: "switch", value: "off", isStateChange: true, display: false)
+                sendEvent(name: "switch", value: "off")
             }
         }
         else if (cmd.parameter.first() == 0){
             if (currstate3 == "on"){
-        	sendEvent(name: "switch3", value: "off", isStateChange: true, display: false)
+        	sendEvent(name: "switch3", value: "off")
             currstate3 = "off"
             }
             currstate1 = device.currentState("switch1").getValue()
@@ -291,10 +291,10 @@ def zwaveEvent(hubitat.zwave.commands.multichannelv3.MultiChannelCmdEncap cmd) {
             currstate6 = device.currentState("switch6").getValue()
             
             if (currstate1 == "off" && currstate2 == "off" && currstate3 == "off" && currstate4 == "off" && currstate5 == "off" && currstate6 == "off"){
-               sendEvent(name: "switch", value: "off", isStateChange: true, display: false)
+               sendEvent(name: "switch", value: "off")
            }
                           else{
-               sendEvent(name: "switch", value: "on", isStateChange: true, display: false)
+               sendEvent(name: "switch", value: "on")
                }
         }
      }
@@ -302,7 +302,7 @@ def zwaveEvent(hubitat.zwave.commands.multichannelv3.MultiChannelCmdEncap cmd) {
 
         if (cmd.parameter.first() > 180){
             if (currstate4 == "off"){
-        	sendEvent(name: "switch4", value: "on", isStateChange: true, display: false)
+        	sendEvent(name: "switch4", value: "on")
             currstate4 = "on"
             }
             currstate1 = device.currentState("switch1").getValue()
@@ -312,15 +312,15 @@ def zwaveEvent(hubitat.zwave.commands.multichannelv3.MultiChannelCmdEncap cmd) {
             currstate6 = device.currentState("switch6").getValue()
             
             if (currstate1 == "on" || currstate2 == "on" || currstate3 == "on" || currstate4 == "on" || currstate5 == "on" || currstate6 == "on"){
-               sendEvent(name: "switch", value: "on", isStateChange: true, display: false)
+               sendEvent(name: "switch", value: "on")
            }
                         else{
-                sendEvent(name: "switch", value: "off", isStateChange: true, display: false)
+                sendEvent(name: "switch", value: "off")
             }
         }
         else if (cmd.parameter.first() == 0){
             if (currstate4 == "on"){
-        	sendEvent(name: "switch4", value: "off", isStateChange: true, display: false)
+        	sendEvent(name: "switch4", value: "off")
             currstate2 = "off"
             }
             currstate1 = device.currentState("switch1").getValue()
@@ -330,10 +330,10 @@ def zwaveEvent(hubitat.zwave.commands.multichannelv3.MultiChannelCmdEncap cmd) {
             currstate6 = device.currentState("switch6").getValue()
             
             if (currstate1 == "off" && currstate2 == "off" && currstate3 == "off" && currstate4 == "off" && currstate5 == "off" && currstate6 == "off"){
-               sendEvent(name: "switch", value: "off", isStateChange: true, display: false)
+               sendEvent(name: "switch", value: "off")
            }
                           else{
-               sendEvent(name: "switch", value: "on", isStateChange: true, display: false)
+               sendEvent(name: "switch", value: "on")
                }
         } 
      }
@@ -341,7 +341,7 @@ def zwaveEvent(hubitat.zwave.commands.multichannelv3.MultiChannelCmdEncap cmd) {
 
         if (cmd.parameter.first() > 180){
              if (currstate5 == "off"){
-        	    sendEvent(name: "switch5", value: "on", isStateChange: true, display: false)
+        	    sendEvent(name: "switch5", value: "on")
                 currstate5 = "on"
              }
             currstate1 = device.currentState("switch1").getValue()
@@ -350,16 +350,16 @@ def zwaveEvent(hubitat.zwave.commands.multichannelv3.MultiChannelCmdEncap cmd) {
             currstate4 = device.currentState("switch4").getValue()
             currstate6 = device.currentState("switch6").getValue()
             if (currstate1 == "on" || currstate2 == "on" || currstate3 == "on" || currstate4 == "on" || currstate5 == "on" || currstate6 == "on"){
-               sendEvent(name: "switch", value: "on", isStateChange: true, display: false)
+               sendEvent(name: "switch", value: "on")
            }
                         else{
-                sendEvent(name: "switch", value: "off", isStateChange: true, display: false)
+                sendEvent(name: "switch", value: "off")
             }
         }
           
         else if (cmd.parameter.first() == 0){
             if (currstate5 == "on"){
-        	    sendEvent(name: "switch5", value: "off", isStateChange: true, display: false)
+        	    sendEvent(name: "switch5", value: "off")
                 currstate2 = "off"
             }
             currstate1 = device.currentState("switch1").getValue()
@@ -368,10 +368,10 @@ def zwaveEvent(hubitat.zwave.commands.multichannelv3.MultiChannelCmdEncap cmd) {
             currstate4 = device.currentState("switch4").getValue()
             currstate6 = device.currentState("switch6").getValue()
             if (currstate1 == "off" && currstate2 == "off" && currstate3 == "off" && currstate4 == "off" && currstate5 == "off" && currstate6 == "off"){
-               sendEvent(name: "switch", value: "off", isStateChange: true, display: false)
+               sendEvent(name: "switch", value: "off")
            }
                           else{
-               sendEvent(name: "switch", value: "on", isStateChange: true, display: false)
+               sendEvent(name: "switch", value: "on")
                }
         } 
       }
@@ -379,7 +379,7 @@ def zwaveEvent(hubitat.zwave.commands.multichannelv3.MultiChannelCmdEncap cmd) {
 
         if (cmd.parameter.first() > 180){
             if (currstate6 == "off"){
-        	sendEvent(name: "switch6", value: "on", isStateChange: true, display: false)
+        	sendEvent(name: "switch6", value: "on")
             currstate6 = "on"
             }
             currstate1 = device.currentState("switch1").getValue()
@@ -389,15 +389,15 @@ def zwaveEvent(hubitat.zwave.commands.multichannelv3.MultiChannelCmdEncap cmd) {
             currstate5 = device.currentState("switch5").getValue()
             
             if (currstate1 == "on" || currstate2 == "on" || currstate3 == "on" || currstate4 == "on" || currstate5 == "on" || currstate6 == "on"){
-               sendEvent(name: "switch", value: "on", isStateChange: true, display: false)
+               sendEvent(name: "switch", value: "on")
            }
                         else{
-                sendEvent(name: "switch", value: "off", isStateChange: true, display: false)
+                sendEvent(name: "switch", value: "off")
             }
         }
         else if (cmd.parameter.first() == 0){
             if (currstate6 == "on"){
-        	sendEvent(name: "switch6", value: "off", isStateChange: true, display: false)
+        	sendEvent(name: "switch6", value: "off")
             currstate6 = "off"
             }
             currstate1 = device.currentState("switch1").getValue()
@@ -407,10 +407,10 @@ def zwaveEvent(hubitat.zwave.commands.multichannelv3.MultiChannelCmdEncap cmd) {
             currstate5 = device.currentState("switch5").getValue()
 
             if (currstate1 == "off" && currstate2 == "off" && currstate3 == "off" && currstate4 == "off" && currstate5 == "off" && currstate6 == "off"){
-               sendEvent(name: "switch", value: "off", isStateChange: true, display: false)
+               sendEvent(name: "switch", value: "off")
            }
                           else{
-               sendEvent(name: "switch", value: "on", isStateChange: true, display: false)
+               sendEvent(name: "switch", value: "on")
                }
         }
     }
@@ -435,12 +435,12 @@ def zwaveEvent(hubitat.zwave.commands.sensorbinaryv2.SensorBinaryReport cmd)
     
    if (cmd.sensorValue == 0 ) {
        if (sensState == "on"){
-       sendEvent(name: "binarySensor", value: "off", isStateChange: true, display: false)
+       sendEvent(name: "binarySensor", value: "off")
        }
    }
    else if(cmd.sensorValue == 255 ) {
        if (sensState == "off"){
-       sendEvent(name: "binarySensor", value: "on", isStateChange: true, display: false)
+       sendEvent(name: "binarySensor", value: "on")
        }
    }
 }
@@ -451,12 +451,12 @@ def zwaveEvent(hubitat.zwave.commands.notificationv3.NotificationReport cmd)
     
        if (cmd.notificationType == 6 && event == 23 ) {
            if (sensState == "on"){
-       sendEvent(name: "binarySensor", value: "off", isStateChange: true, display: false)
+       sendEvent(name: "binarySensor", value: "off")
            }
    }
    else if(cmd.notificationType == 6 && cmd.event == 22 ) {
        if (sensState == "on"){
-       sendEvent(name: "binarySensor", value: "on", isStateChange: true, display: false)
+       sendEvent(name: "binarySensor", value: "on")
        }
    }
 }
