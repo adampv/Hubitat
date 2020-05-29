@@ -171,21 +171,26 @@ def getAllActivities(){
 }
 
 def parse(String description) {
+  //  sendEvent(name:"numberOfButtons", value:20)
     def msg = parseLanMessage(description)
     if (logEnable) log.debug "parse json:${msg.json}"
     if (msg.body) {
         def result = msg.json
-        if (result.recipe){
+        if (result.recipe || result.device){
             def action = result.action == "launch" ? "on" : "off"
+            def recaction = result.action
             def activity = result.recipe
+            def device = result.device
+            def room = result.room
+            if (result.recipe){
             if (activityChildren) {
                 def cd = getChildDevice("${state.activities."${activity}".scenerio}")
                 if (cd) cd.parse([[name:"switch",value:action,descriptionText:"Neeo activity ${activity} was turned ${action}"]])
+                }
             }
             if (action == "off") activity = "None"
             if (logEnable) log.trace "activity:${activity}, result.action:${result.action}, action:${action}"
             sendEvent(name:"currentActivity", value: activity)
-            log.debug(activity)
             if (activity == "Magic Heating"){
             sendEvent(name:"pushed", value: 1)
             sendEvent(name:"pushed", value: 0)
@@ -196,15 +201,22 @@ def parse(String description) {
             sendEvent(name:"pushed", value: 0)
             runIn(3, "refresh")
             }
+            if (device == "Play/Pause" && recaction == "POWER ON" && room == "Lounge"){
+            sendEvent(name:"pushed", value: 3)
+            sendEvent(name:"pushed", value: 0)
+            runIn(3, "refresh")
+            }
             //runIn(state.execDelay ?: 1,"refresh")
 		
         }
 		if (result.device){
 		}
     }
+    runIn(3,"refresh")
 }
 
 def refresh() {
+    if (logEnable) log.debug "refresh called"
     def cd
     def activeScenerios = []
     def inactiveScenerios = []
