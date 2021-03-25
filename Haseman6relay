@@ -64,6 +64,7 @@ command "indRefresh3"
 command "indRefresh4"
 command "indRefresh5" 
 command "indRefresh6"   
+command "testOnByBinary"
     
     
     
@@ -77,6 +78,14 @@ fingerprint deviceId: "0x1001", inClusters:"0x5E,0x20,0x25,0x30,0x71,0x31,0x70,0
 // Work in Progress multiway single on functionality in driver
 
     preferences {
+        
+        	def refreshRate = [:]
+		refreshRate << ["1 min" : "Refresh every minute"]
+		refreshRate << ["5 min" : "Refresh every 5 minutes"]
+		refreshRate << ["15 min" : "Refresh every 15 minutes"]
+		refreshRate << ["30 min" : "Refresh every 30 minutes"]
+		refreshRate << ["manual" : "Manually or Polling Only"]
+        
         input name: "SwitchMode1", type: "enum", defaultValue: "0", required: true,
             title: "Switch 1 Operating mode:",
        		options: [["0" : "Normal"],
@@ -107,6 +116,10 @@ fingerprint deviceId: "0x1001", inClusters:"0x5E,0x20,0x25,0x30,0x71,0x31,0x70,0
        		options: [["0" : "Normal"],
                     ["1" : "Single-On Multiway"]]
         
+        input ("refresh_Rate", "enum", title: "Binary Sensor Refresh Rate", options: refreshRate, defaultValue: "manual")
+        input "locale", "enum", title: "Choose refresh date format", required: true, defaultValue: true,
+            options: [US:"US MM/DD/YYYY",UK:"UK DD/MM/YYYY"] //RK
+        
         input name: "debugOutput",   type: "bool", title: "<b>Enable debug logging?</b>",   description: "<br>", defaultValue: true  
     }
 
@@ -127,7 +140,7 @@ def parse(String description) {
 
 
 def zwaveEvent(hubitat.zwave.commands.basicv1.BasicSet cmd) {
-   //  log.debug(cmd)
+   logDebug(cmd)
     sendEvent(name: "switch", value: cmd.value ? "on" : "off", type: "digital")
   /*  def result = []
     result << zwave.multiChannelV3.multiChannelCmdEncap(sourceEndPoint:1, destinationEndPoint:1, commandClass:37, command:2).format()
@@ -141,7 +154,7 @@ def zwaveEvent(hubitat.zwave.commands.basicv1.BasicSet cmd) {
 
 def zwaveEvent(hubitat.zwave.commands.switchbinaryv1.SwitchBinaryReport cmd)
 {
-  //  log.debug(cmd)
+    logDebug(cmd)
     sendEvent(name: "switch", value: cmd.value ? "on" : "off", type: "digital")
   /*  def result = []
     result << zwave.multiChannelV3.multiChannelCmdEncap(sourceEndPoint:1, destinationEndPoint:1, commandClass:37, command:2).format()
@@ -156,13 +169,13 @@ def zwaveEvent(hubitat.zwave.commands.switchbinaryv1.SwitchBinaryReport cmd)
 
 def zwaveEvent(hubitat.zwave.commands.multichannelv3.MultiChannelCapabilityReport cmd) 
 {
-    
+    logDebug(cmd)
   //  log.debug("multichannelv3.MultiChannelCapabilityReport endPoint = ${cmd.endPoint}, genericDeviceClass = ${cmd.genericDeviceClass}, specificDeviceClass = ${cmd.specificDeviceClass}")
 
 }
 
-def zwaveEvent(hubitat.zwave.commands.multichannelv3.MultiChannelCmdEncap cmd) {
- //  log.debug("encap at ${cmd}")
+def zwaveEvent(hubitat.zwave.commands.multichannelv4.MultiChannelCmdEncap cmd) {
+   logDebug(cmd)
     def map = [ name: "switch$cmd.sourceEndPoint" ]
     def currstate = "off"
 
@@ -431,22 +444,23 @@ def zwaveEvent(hubitat.zwave.commands.switchallv1.SwitchAllReport cmd) {
 
 def zwaveEvent(hubitat.zwave.commands.sensorbinaryv2.SensorBinaryReport cmd)
 {
-   def sensState = device.currentState("binarySensor").getValue()
+ //  def sensState = device.currentState("binarySensor").getValue()
     
    if (cmd.sensorValue == 0 ) {
-       if (sensState == "on"){
+  //     if (sensState == "on"){
        sendEvent(name: "binarySensor", value: "off")
-       }
+  //     }
    }
    else if(cmd.sensorValue == 255 ) {
-       if (sensState == "off"){
+ //      if (sensState == "off"){
        sendEvent(name: "binarySensor", value: "on")
-       }
+ //      }
    }
 }
 
 def zwaveEvent(hubitat.zwave.commands.notificationv3.NotificationReport cmd)
 {
+    logDebug(cmd)
     def sensState = device.currentState("binarySensor").getValue()
     
        if (cmd.notificationType == 6 && event == 23 ) {
@@ -463,24 +477,48 @@ def zwaveEvent(hubitat.zwave.commands.notificationv3.NotificationReport cmd)
 
 def refresh() {
     
-	def cmds = []
-	cmds << zwave.multiChannelV3.multiChannelCmdEncap(destinationEndPoint:1, commandClass:32, command:2).format()
-    cmds << zwave.multiChannelV3.multiChannelCmdEncap(destinationEndPoint:2, commandClass:32, command:2).format()
-    cmds << zwave.multiChannelV3.multiChannelCmdEncap(destinationEndPoint:3, commandClass:32, command:2).format()
-    cmds << zwave.multiChannelV3.multiChannelCmdEncap(destinationEndPoint:4, commandClass:32, command:2).format()
-    cmds << zwave.multiChannelV3.multiChannelCmdEncap(destinationEndPoint:5, commandClass:32, command:2).format()
-    cmds << zwave.multiChannelV3.multiChannelCmdEncap(destinationEndPoint:6, commandClass:32, command:2).format()
-    cmds << zwave.sensorBinaryV2.sensorBinaryGet().format() 
-    
-	delayBetween(cmds, 600) 
+poll()
 
     
+}
+
+def autorefreshBinary() {
+	if (locale == "UK") {
+	logDebug("Get last UK Date DD/MM/YYYY")
+	state.LastRefresh = new Date().format("d/MM/YYYY \n HH:mm:ss", location.timeZone)
+	sendEvent(name: "LastRefresh", value: state.LastRefresh, descriptionText: "Last refresh performed")
+	} 
+	if (locale == "US") {
+	logDebug("Get last US Date MM/DD/YYYY")
+	state.LastRefresh = new Date().format("MM/d/YYYY \n HH:mm:ss", location.timeZone)
+	sendEvent(name: "LastRefresh", value: state.LastRefresh, descriptionText: "Last refresh performed")
+	}
+	logDebug("Executing ${refresh_Rate} minute(s) AUTO REFRESH") //RK
+    refreshBinary()
+}
+
+def pollBinary(){
+    if (locale == "UK") {
+	logDebug("Get last UK Date DD/MM/YYYY")
+	state.LastRefresh = new Date().format("d/MM/YYYY \n HH:mm:ss", location.timeZone)
+	sendEvent(name: "LastRefresh", value: state.LastRefresh, descriptionText: "Last refresh performed")
+	} 
+	if (locale == "US") {
+	logDebug("Get last US Date MM/DD/YYYY")
+	state.LastRefresh = new Date().format("MM/d/YYYY \n HH:mm:ss", location.timeZone)
+	sendEvent(name: "LastRefresh", value: state.LastRefresh, descriptionText: "Last refresh performed")
+	}
+	logDebug("Executing 'poll'")
+    refreshBinary()
 }
 
 def refreshBinary() {
     
     logDebug("Refresh Binary called")
-    zwave.sensorBinaryV2.sensorBinaryGet().format()
+   // zwave.sensorBinaryV2.sensorBinaryGet().format()
+    def cmds = []    
+    cmds << encap(zwave.sensorBinaryV2.sensorBinaryGet(), 0)
+    commands(cmds, 1000)
 
     
 }
@@ -494,12 +532,12 @@ def testButton(){
 //    zwave.multiChannelV3.multiChannelCmdEncap(destinationEndPoint:6, commandClass:32, command:2).format()
     
   //  zwave.wakeUpV2.wakeUpIntervalSet(nodeid:zwaveHubNodeId, seconds: 6048000).format() 
-  //  zwave.sensorMultilevelV5.sensorMultilevelGet(sensorType: 2).format()
+   // zwave.sensorMultilevelV5.sensorMultilevelGet(sensorType: 2).format()
   
     
     
     def cmds = []
-    cmds +=  zwave.notificationV3.notificationGet(notificationType: 6).format()
+ //   cmds +=  zwave.notificationV3.notificationGet(notificationType: 6).format()
  //   cmds +=  zwave.configurationV1.configurationSet(parameterNumber: 72, configurationValue:[0, 0, 128, 1], size:4).format()
   //  cmds +=  zwave.configurationV1.configurationGet(parameterNumber: 72).format()
    // cmds +=  zwave.configurationV1.configurationGet(parameterNumber: 1).format()
@@ -533,28 +571,44 @@ def zwaveEvent(hubitat.zwave.commands.sensormultilevelv5.SensorMultilevelReport 
 
 
 def poll() {
-	def cmds = []
-	cmds << zwave.multiChannelV3.multiChannelCmdEncap(sourceEndPoint:1, destinationEndPoint:1, commandClass:37, command:2).format()
-    cmds << zwave.multiChannelV3.multiChannelCmdEncap(sourceEndPoint:2, destinationEndPoint:2, commandClass:37, command:2).format()
-    cmds << zwave.multiChannelV3.multiChannelCmdEncap(sourceEndPoint:3, destinationEndPoint:3, commandClass:37, command:2).format()
-    cmds << zwave.multiChannelV3.multiChannelCmdEncap(sourceEndPoint:4, destinationEndPoint:4, commandClass:37, command:2).format()
-    cmds << zwave.multiChannelV3.multiChannelCmdEncap(sourceEndPoint:5, destinationEndPoint:5, commandClass:37, command:2).format()
-    cmds << zwave.multiChannelV3.multiChannelCmdEncap(sourceEndPoint:6, destinationEndPoint:6, commandClass:37, command:2).format()
-   // cmds << zwave.sensorMultilevelV2.sensorMultilevelGet().format()
-    cmds << zwave.sensorBinaryV2.sensorBinaryGet().format()
-  //  cmds << zwave.sensorMultilevelV2.sensorMultilevelGet(sensorType:1, scale:1).format()
-	delayBetween(cmds, 700)
+        runIn(7, refreshBinary)
+        commands([
+            encap(zwave.switchBinaryV1.switchBinaryGet(), 1),
+            encap(zwave.switchBinaryV1.switchBinaryGet(), 2),
+            encap(zwave.switchBinaryV1.switchBinaryGet(), 3),
+            encap(zwave.switchBinaryV1.switchBinaryGet(), 4),
+            encap(zwave.switchBinaryV1.switchBinaryGet(), 5),
+            encap(zwave.switchBinaryV1.switchBinaryGet(), 6)
+    ])
 }
 
 def configure() {
-//	log.debug "Executing 'configure'"
+    logDebug ("Executing 'configure'")
     
     def cmds = []
 
         cmds +=  zwave.associationV2.associationRemove(groupingIdentifier: 1, nodeId: zwaveHubNodeId ).format()
-        cmds +=  zwave.associationV2.associationSet(groupingIdentifier: 2, nodeId: zwaveHubNodeId ).format()
+        cmds +=  zwave.associationV2.associationRemove(groupingIdentifier: 2, nodeId: zwaveHubNodeId ).format()
+        cmds +=  zwave.associationV2.associationRemove(groupingIdentifier: 3, nodeId: zwaveHubNodeId ).format()
+        cmds +=  zwave.associationV2.associationRemove(groupingIdentifier: 4, nodeId: zwaveHubNodeId ).format()
+        cmds +=  zwave.associationV2.associationRemove(groupingIdentifier: 5, nodeId: zwaveHubNodeId ).format()
+        cmds +=  zwave.associationV2.associationRemove(groupingIdentifier: 6, nodeId: zwaveHubNodeId ).format()
+        cmds +=  zwave.associationV2.associationRemove(groupingIdentifier: 7, nodeId: zwaveHubNodeId ).format()
+        cmds +=  zwave.associationV2.associationRemove(groupingIdentifier: 8, nodeId: zwaveHubNodeId ).format()
+        cmds +=  zwave.associationV2.associationRemove(groupingIdentifier: 9, nodeId: zwaveHubNodeId ).format()
+       // cmds +=  zwave.associationV2.associationGroupingsGet().format()
+        cmds +=  zwave.multiChannelAssociationV2.multiChannelAssociationRemove(groupingIdentifier: 1, nodeId: [zwaveHubNodeId]).format()
+        cmds +=  zwave.multiChannelAssociationV2.multiChannelAssociationRemove(groupingIdentifier: 2, nodeId: [zwaveHubNodeId]).format()
+        cmds +=  zwave.multiChannelAssociationV2.multiChannelAssociationRemove(groupingIdentifier: 3, nodeId: [zwaveHubNodeId]).format()
+        cmds +=  zwave.multiChannelAssociationV2.multiChannelAssociationRemove(groupingIdentifier: 4, nodeId: [zwaveHubNodeId]).format()
+        cmds +=  zwave.multiChannelAssociationV2.multiChannelAssociationRemove(groupingIdentifier: 5, nodeId: [zwaveHubNodeId]).format()
+        cmds +=  zwave.multiChannelAssociationV2.multiChannelAssociationRemove(groupingIdentifier: 6, nodeId: [zwaveHubNodeId]).format()
+        cmds +=  zwave.multiChannelAssociationV2.multiChannelAssociationRemove(groupingIdentifier: 7, nodeId: [zwaveHubNodeId]).format()
+        cmds +=  zwave.multiChannelAssociationV2.multiChannelAssociationRemove(groupingIdentifier: 8, nodeId: [zwaveHubNodeId]).format()
+        cmds +=  zwave.multiChannelAssociationV2.multiChannelAssociationRemove(groupingIdentifier: 9, nodeId: [zwaveHubNodeId]).format()
+       // cmds +=  zwave.multiChannelAssociationV2.multiChannelAssociationGroupingsGet().format()
     
-        if (cmds) return delayBetween(cmds, 750)
+        if (cmds) return delayBetween(cmds, 1100)
     
 }
 
@@ -568,13 +622,33 @@ def updateSingleparam(paramNum, paramValue) {
 */
 def updated()
 {
-//	log.debug "Preferences have been changed. Attempting configure()"
- //   def cmds = configure()
- //   response(cmds)
+     logDebug("Preferences have been changed. Attempting configure()")
+
      if (debugOutput) runIn(1800,logsOff)  
+    
+     switch(refresh_Rate) {
+		case "1 min" :
+			runEvery1Minute(autorefreshBinary)
+			break
+		case "5 min" :
+			runEvery5Minutes(autorefreshBinary)
+			break
+     	case "15 min" :
+			runEvery15Minutes(autorefreshBinary)
+			break
+		case "30 min" :
+			runEvery15Minutes(autorefreshBinary)
+			break
+		case "manual" :
+			unschedule(autorefresh)
+            log.info "Autorefresh disabled"
+            break
+	}
+
+    logDebug("Refresh set for every ${refresh_Rate} minute(s).")   
 }
 def on() { 
-   delayBetween([
+ /*  delayBetween([
         zwave.multiChannelV3.multiChannelCmdEncap(sourceEndPoint:2, destinationEndPoint:2, commandClass:37, command:1, parameter:[255]).format(),
         zwave.multiChannelV3.multiChannelCmdEncap(sourceEndPoint:2, destinationEndPoint:2, commandClass:37, command:2).format(),
         zwave.multiChannelV3.multiChannelCmdEncap(sourceEndPoint:3, destinationEndPoint:3, commandClass:37, command:1, parameter:[255]).format(),
@@ -589,9 +663,26 @@ def on() {
         zwave.multiChannelV3.multiChannelCmdEncap(sourceEndPoint:1, destinationEndPoint:1, commandClass:37, command:2).format()
 
     ], 500)
+*/
+        runIn(15, refreshBinary)
+        commands([
+            encap(zwave.basicV1.basicSet(value: 0xFF), 1),
+            encap(zwave.switchBinaryV1.switchBinaryGet(), 1),
+            encap(zwave.basicV1.basicSet(value: 0xFF), 2),
+            encap(zwave.switchBinaryV1.switchBinaryGet(), 2),
+            encap(zwave.basicV1.basicSet(value: 0xFF), 3),
+            encap(zwave.switchBinaryV1.switchBinaryGet(), 3),
+            encap(zwave.basicV1.basicSet(value: 0xFF), 4),
+            encap(zwave.switchBinaryV1.switchBinaryGet(), 4),
+            encap(zwave.basicV1.basicSet(value: 0xFF), 5),
+            encap(zwave.switchBinaryV1.switchBinaryGet(), 5),
+            encap(zwave.basicV1.basicSet(value: 0xFF), 6),
+            encap(zwave.switchBinaryV1.switchBinaryGet(), 6)
+
+    ])
 }
 def off() {
-   delayBetween([
+ /*  delayBetween([
         
         zwave.multiChannelV3.multiChannelCmdEncap(sourceEndPoint:2, destinationEndPoint:2, commandClass:37, command:1, parameter:[0]).format(),
         zwave.multiChannelV3.multiChannelCmdEncap(sourceEndPoint:3, destinationEndPoint:3, commandClass:37, command:1, parameter:[0]).format(),
@@ -607,7 +698,25 @@ def off() {
         zwave.multiChannelV3.multiChannelCmdEncap(sourceEndPoint:4, destinationEndPoint:4, commandClass:37, command:2).format()
 
     ], 550)
+
+*/
+        runIn(15, refreshBinary)
+        commands([
+            encap(zwave.basicV1.basicSet(value: 0x00), 1),
+            encap(zwave.switchBinaryV1.switchBinaryGet(), 1),
+            encap(zwave.basicV1.basicSet(value: 0x00), 2),
+            encap(zwave.switchBinaryV1.switchBinaryGet(), 2),
+            encap(zwave.basicV1.basicSet(value: 0x00), 3),
+            encap(zwave.switchBinaryV1.switchBinaryGet(), 3),
+            encap(zwave.basicV1.basicSet(value: 0x00), 4),
+            encap(zwave.switchBinaryV1.switchBinaryGet(), 4),
+            encap(zwave.basicV1.basicSet(value: 0x00), 5),
+            encap(zwave.switchBinaryV1.switchBinaryGet(), 5),
+            encap(zwave.basicV1.basicSet(value: 0x00), 6),
+            encap(zwave.switchBinaryV1.switchBinaryGet(), 6)
+    ])
 }
+
 
 
 def on1() {
@@ -619,10 +728,14 @@ def on1() {
     logDebug("switch mode is normal for 1, proceeding regardless of other switch states")
     runIn(7, refreshBinary)
     
-    delayBetween([
+  /*  delayBetween([
         zwave.multiChannelV3.multiChannelCmdEncap(destinationEndPoint:1, commandClass:37, command:1, parameter:[255]).format(),
         zwave.multiChannelV3.multiChannelCmdEncap(destinationEndPoint:1, commandClass:37, command:2).format()
-    ], 600)
+    ], 600)  */
+    commands([
+            encap(zwave.basicV1.basicSet(value: 0xFF), 1),
+            encap(zwave.switchBinaryV1.switchBinaryGet(), 1)
+    ])
         
     }
     else if (SwitchMode1 == "1"){
@@ -665,10 +778,14 @@ def on1() {
                 logDebug("All other multiway switches are off so good to go - turning on 1")
                 runIn(7, refreshBinary)
     
-                delayBetween([
+              /*  delayBetween([
                     zwave.multiChannelV3.multiChannelCmdEncap(destinationEndPoint:1, commandClass:37, command:1, parameter:[255]).format(),
                     zwave.multiChannelV3.multiChannelCmdEncap(destinationEndPoint:1, commandClass:37, command:2).format()
-                    ], 600)
+                    ], 600) */
+                commands([
+                    encap(zwave.basicV1.basicSet(value: 0xFF), 1),
+                    encap(zwave.switchBinaryV1.switchBinaryGet(), 1)
+                    ])
         
         }
         else {
@@ -685,10 +802,14 @@ def off1() {
     logDebug("turning off 1")
     runIn(7, refreshBinary)
     
-    delayBetween([
+    /*delayBetween([
         zwave.multiChannelV3.multiChannelCmdEncap(destinationEndPoint:1, commandClass:37, command:1, parameter:[0]).format(),
         zwave.multiChannelV3.multiChannelCmdEncap(destinationEndPoint:1, commandClass:37, command:2).format()
-    ], 600)
+    ], 600) */
+    commands([
+            encap(zwave.basicV1.basicSet(value: 0x00), 1),
+            encap(zwave.switchBinaryV1.switchBinaryGet(), 1)
+    ])
 }
 
 def on2() {
@@ -698,10 +819,14 @@ def on2() {
     logDebug("switch mode is normal for 2, proceeding regardless of other switch states")
     runIn(7, refreshBinary)
     
-    delayBetween([
+  /*  delayBetween([
         zwave.multiChannelV3.multiChannelCmdEncap(destinationEndPoint:2, commandClass:37, command:1, parameter:[255]).format(),
         zwave.multiChannelV3.multiChannelCmdEncap(destinationEndPoint:2, commandClass:37, command:2).format()
-    ], 500)
+    ], 500)  */
+    commands([
+            encap(zwave.basicV1.basicSet(value: 0xFF), 2),
+            encap(zwave.switchBinaryV1.switchBinaryGet(), 2)
+    ])
         
     }
     else if (SwitchMode2 == "1"){
@@ -745,10 +870,14 @@ def on2() {
                 logDebug("All other multiway switches are off so good to go - turning on 2")
                 runIn(7, refreshBinary)
     
-                delayBetween([
+              /*  delayBetween([
                     zwave.multiChannelV3.multiChannelCmdEncap(destinationEndPoint:2, commandClass:37, command:1, parameter:[255]).format(),
                     zwave.multiChannelV3.multiChannelCmdEncap(destinationEndPoint:2, commandClass:37, command:2).format()
-                    ], 600)
+                    ], 600) */
+                commands([
+                    encap(zwave.basicV1.basicSet(value: 0xFF), 2),
+                    encap(zwave.switchBinaryV1.switchBinaryGet(), 2)
+                 ])
         
         }
         else {
@@ -764,10 +893,14 @@ def off2() {
     
     logDebug("turning off 2")
     runIn(7, refreshBinary)
-    delayBetween([
+    /* delayBetween([
         zwave.multiChannelV3.multiChannelCmdEncap(destinationEndPoint:2, commandClass:37, command:1, parameter:[0]).format(),
         zwave.multiChannelV3.multiChannelCmdEncap(destinationEndPoint:2, commandClass:37, command:2).format()
-    ], 500)
+    ], 500) */
+    commands([
+            encap(zwave.basicV1.basicSet(value: 0x00), 2),
+            encap(zwave.switchBinaryV1.switchBinaryGet(), 2)
+    ])
 }
 
 def on3() {
@@ -777,10 +910,15 @@ def on3() {
     logDebug("switch mode is normal for 3, proceeding regardless of other switch states")
     runIn(7, refreshBinary)
     
-    delayBetween([
+   /* delayBetween([
         zwave.multiChannelV3.multiChannelCmdEncap(destinationEndPoint:3, commandClass:37, command:1, parameter:[255]).format(),
         zwave.multiChannelV3.multiChannelCmdEncap(destinationEndPoint:3, commandClass:37, command:2).format()
-    ], 500)
+    ], 500) */
+        
+    commands([
+            encap(zwave.basicV1.basicSet(value: 0xFF), 3),
+            encap(zwave.switchBinaryV1.switchBinaryGet(), 3)
+    ])
         
     }
     else if (SwitchMode3 == "1"){
@@ -823,10 +961,14 @@ def on3() {
                 logDebug("All other multiway switches are off so good to go - turning on 3")
                 runIn(7, refreshBinary)
     
-                delayBetween([
+               /* delayBetween([
                     zwave.multiChannelV3.multiChannelCmdEncap(destinationEndPoint:3, commandClass:37, command:1, parameter:[255]).format(),
                     zwave.multiChannelV3.multiChannelCmdEncap(destinationEndPoint:3, commandClass:37, command:2).format()
-                    ], 600)
+                    ], 600) */
+                    commands([
+                        encap(zwave.basicV1.basicSet(value: 0xFF), 3),
+                        encap(zwave.switchBinaryV1.switchBinaryGet(), 3)
+                        ])
         
         }
         else {
@@ -843,10 +985,14 @@ def off3() {
     logDebug("turning off 3")
     runIn(7, refreshBinary)
     
-    delayBetween([
+    /* delayBetween([
         zwave.multiChannelV3.multiChannelCmdEncap(destinationEndPoint:3, commandClass:37, command:1, parameter:[0]).format(),
         zwave.multiChannelV3.multiChannelCmdEncap(destinationEndPoint:3, commandClass:37, command:2).format()
-    ], 500)
+    ], 500) */
+    commands([
+            encap(zwave.basicV1.basicSet(value: 0x00), 3),
+            encap(zwave.switchBinaryV1.switchBinaryGet(), 3)
+    ])
 }
 
 def on4() {
@@ -856,10 +1002,14 @@ def on4() {
     logDebug("switch mode is normal for 4, proceeding regardless of other switch states")
     runIn(7, refreshBinary)
     
-    delayBetween([
+   /* delayBetween([
         zwave.multiChannelV3.multiChannelCmdEncap(destinationEndPoint:4, commandClass:37, command:1, parameter:[255]).format(),
         zwave.multiChannelV3.multiChannelCmdEncap(destinationEndPoint:4, commandClass:37, command:2).format()
-    ], 500)
+    ], 500) */
+    commands([
+            encap(zwave.basicV1.basicSet(value: 0xFF), 4),
+            encap(zwave.switchBinaryV1.switchBinaryGet(), 4)
+    ])
         
     }
     else if (SwitchMode4 == "1"){
@@ -902,10 +1052,14 @@ def on4() {
                 logDebug("All other multiway switches are off so good to go - turning on 4")
                 runIn(7, refreshBinary)
     
-                delayBetween([
+             /*   delayBetween([
                     zwave.multiChannelV3.multiChannelCmdEncap(destinationEndPoint:4, commandClass:37, command:1, parameter:[255]).format(),
                     zwave.multiChannelV3.multiChannelCmdEncap(destinationEndPoint:4, commandClass:37, command:2).format()
-                    ], 600)
+                    ], 600) */
+                commands([
+                    encap(zwave.basicV1.basicSet(value: 0xFF), 4),
+                    encap(zwave.switchBinaryV1.switchBinaryGet(), 4)
+                    ])
         
         }
         else {
@@ -923,10 +1077,14 @@ def off4() {
     logDebug("turning off 4")
     runIn(7, refreshBinary)
     
-    delayBetween([
+   /* delayBetween([
         zwave.multiChannelV3.multiChannelCmdEncap(destinationEndPoint:4, commandClass:37, command:1, parameter:[0]).format(),
         zwave.multiChannelV3.multiChannelCmdEncap(destinationEndPoint:4, commandClass:37, command:2).format()
-    ], 500)
+    ], 500) */
+    commands([
+            encap(zwave.basicV1.basicSet(value: 0x00), 4),
+            encap(zwave.switchBinaryV1.switchBinaryGet(), 4)
+    ])
 }
 
 def on5() {
@@ -936,10 +1094,14 @@ def on5() {
     logDebug("switch mode is normal for 5, proceeding regardless of other switch states")
     runIn(7, refreshBinary)
     
-    delayBetween([
+    /* delayBetween([
         zwave.multiChannelV3.multiChannelCmdEncap(destinationEndPoint:5, commandClass:37, command:1, parameter:[255]).format(),
         zwave.multiChannelV3.multiChannelCmdEncap(destinationEndPoint:5, commandClass:37, command:2).format()
-    ], 500)
+    ], 500) */
+    commands([
+            encap(zwave.basicV1.basicSet(value: 0xFF), 5),
+            encap(zwave.switchBinaryV1.switchBinaryGet(), 5)
+    ])
         
     }
     else if (SwitchMode5 == "1"){
@@ -982,10 +1144,14 @@ def on5() {
                 logDebug("All other multiway switches are off so good to go - turning on 5")
                 runIn(7, refreshBinary)
     
-                delayBetween([
+               /* delayBetween([
                     zwave.multiChannelV3.multiChannelCmdEncap(destinationEndPoint:5, commandClass:37, command:1, parameter:[255]).format(),
                     zwave.multiChannelV3.multiChannelCmdEncap(destinationEndPoint:5, commandClass:37, command:2).format()
-                    ], 600)
+                    ], 600) */
+                commands([
+                    encap(zwave.basicV1.basicSet(value: 0xFF), 5),
+                    encap(zwave.switchBinaryV1.switchBinaryGet(), 5)
+                ])
         
         }
         else {
@@ -1003,10 +1169,14 @@ def off5() {
     logDebug("turning off 5")
     runIn(7, refreshBinary)
     
-    delayBetween([
+    /* delayBetween([
         zwave.multiChannelV3.multiChannelCmdEncap(destinationEndPoint:5, commandClass:37, command:1, parameter:[0]).format(),
         zwave.multiChannelV3.multiChannelCmdEncap(destinationEndPoint:5, commandClass:37, command:2).format()
-    ], 500)
+    ], 500) */
+    commands([
+            encap(zwave.basicV1.basicSet(value: 0x00), 5),
+            encap(zwave.switchBinaryV1.switchBinaryGet(), 5)
+    ])
 }
 def on6() {
     
@@ -1015,10 +1185,15 @@ def on6() {
     logDebug("switch mode is normal for 6, proceeding regardless of other switch states")
     runIn(7, refreshBinary)
     
-    delayBetween([
+    /* delayBetween([
         zwave.multiChannelV3.multiChannelCmdEncap(destinationEndPoint:6, commandClass:32, command:1, parameter:[255]).format(),
         zwave.multiChannelV3.multiChannelCmdEncap(destinationEndPoint:6, commandClass:32, command:2).format()
-    ], 500)
+    ], 500) */
+        
+     commands([
+            encap(zwave.basicV1.basicSet(value: 0xFF), 6),
+            encap(zwave.switchBinaryV1.switchBinaryGet(), 6)
+    ])
         
     }
     
@@ -1062,10 +1237,15 @@ def on6() {
                 logDebug("All other multiway switches are off so good to go - turning on 6")
                 runIn(7, refreshBinary)
     
-                delayBetween([
+               /* delayBetween([
                     zwave.multiChannelV3.multiChannelCmdEncap(destinationEndPoint:6, commandClass:37, command:1, parameter:[255]).format(),
                     zwave.multiChannelV3.multiChannelCmdEncap(destinationEndPoint:6, commandClass:37, command:2).format()
-                    ], 600)
+                    ], 600) */
+            
+                 commands([
+                    encap(zwave.basicV1.basicSet(value: 0xFF), 6),
+                    encap(zwave.switchBinaryV1.switchBinaryGet(), 6)
+                    ])
         
         }
         else {
@@ -1082,34 +1262,58 @@ def off6() {
     logDebug("turning off 6")
     runIn(7, refreshBinary)
     
-    delayBetween([
+   /* delayBetween([
         zwave.multiChannelV3.multiChannelCmdEncap(destinationEndPoint:6, commandClass:32, command:1, parameter:[0]).format(),
         zwave.multiChannelV3.multiChannelCmdEncap(destinationEndPoint:6, commandClass:32, command:2).format()
-    ], 500)
+    ], 500) */
+    
+         commands([
+            encap(zwave.basicV1.basicSet(value: 0x00), 6),
+            encap(zwave.switchBinaryV1.switchBinaryGet(), 6)
+    ])
 }
 
 def indRefresh1() {
-    zwave.multiChannelV3.multiChannelCmdEncap(destinationEndPoint:1, commandClass:37, command:2).format()
+   // zwave.multiChannelV3.multiChannelCmdEncap(destinationEndPoint:1, commandClass:37, command:2).format()
+    commands([
+            encap(zwave.switchBinaryV1.switchBinaryGet(), 1)
+    ])
 }
 
 def indRefresh2() {
-    zwave.multiChannelV3.multiChannelCmdEncap(destinationEndPoint:2, commandClass:37, command:2).format()
+    //zwave.multiChannelV3.multiChannelCmdEncap(destinationEndPoint:2, commandClass:37, command:2).format()
+    commands([
+            encap(zwave.switchBinaryV1.switchBinaryGet(), 2)
+    ])
 }
 
 def indRefresh3() {
-    zwave.multiChannelV3.multiChannelCmdEncap(destinationEndPoint:3, commandClass:37, command:2).format()
+    //zwave.multiChannelV3.multiChannelCmdEncap(destinationEndPoint:3, commandClass:37, command:2).format()
+    commands([
+            encap(zwave.switchBinaryV1.switchBinaryGet(), 3)
+    ])
 }
 
 def indRefresh4() {
-    zwave.multiChannelV3.multiChannelCmdEncap(destinationEndPoint:4, commandClass:37, command:2).format()
+    //zwave.multiChannelV3.multiChannelCmdEncap(destinationEndPoint:4, commandClass:37, command:2).format()
+    commands([
+            encap(zwave.switchBinaryV1.switchBinaryGet(), 4)
+    ])
 }
 
 def indRefresh5() {
-    zwave.multiChannelV3.multiChannelCmdEncap(destinationEndPoint:5, commandClass:37, command:2).format()
+    //zwave.multiChannelV3.multiChannelCmdEncap(destinationEndPoint:5, commandClass:37, command:2).format()
+    commands([
+            encap(zwave.switchBinaryV1.switchBinaryGet(), 5)
+    ])
+    
 }
 
 def indRefresh6() {
-    zwave.multiChannelV3.multiChannelCmdEncap(destinationEndPoint:6, commandClass:37, command:2).format()
+   // zwave.multiChannelV3.multiChannelCmdEncap(destinationEndPoint:6, commandClass:37, command:2).format()
+    commands([
+            encap(zwave.switchBinaryV1.switchBinaryGet(), 6)
+    ])
 }
 
 def logsOff(){
@@ -1120,5 +1324,37 @@ def logsOff(){
 private logDebug(msg) {
 	if (settings?.debugOutput || settings?.debugOutput == null) {
 		log.debug "$msg"
+	}
+}
+
+def testOnByBinary(){
+    
+def cmds = []
+    cmds << encap(zwave.switchBinaryV1.switchBinaryGet(), 0)
+/*    cmds << encap(zwave.switchBinaryV1.switchBinaryGet(), 2)
+    cmds << encap(zwave.switchBinaryV1.switchBinaryGet(), 3)
+    cmds << encap(zwave.switchBinaryV1.switchBinaryGet(), 4)
+    cmds << encap(zwave.switchBinaryV1.switchBinaryGet(), 5)  */
+
+    commands(cmds, 1000)
+}
+
+private encap(cmd, endpoint) {
+    if (endpoint) {
+        zwave.multiChannelV3.multiChannelCmdEncap(destinationEndPoint:endpoint).encapsulate(cmd)
+    } else {
+        cmd
+    }
+}
+
+private commands(commands, delay=1100) {
+    delayBetween(commands.collect{ command(it) }, delay)
+}
+
+private command(hubitat.zwave.Command cmd) {
+	if (state.sec) {
+		zwave.securityV1.securityMessageEncapsulation().encapsulate(cmd).format()
+	} else {
+		cmd.format()
 	}
 }
