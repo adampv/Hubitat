@@ -144,7 +144,7 @@ def updated() {
 }
 
 metadata {
-	definition (name: "heatit Thermostat (1.92FW)", namespace: "heatit", author: "AdamV") {
+	definition (name: "heatit Thermostat (1.92FW) [not secure paired]", namespace: "heatit", author: "AdamV") {
 		capability "Actuator"
 		capability "Temperature Measurement"
 		capability "Thermostat"
