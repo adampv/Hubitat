@@ -1,0 +1,1257 @@
+/*
+ *  Note: This handler requires the "Haseman RS-10PM2 Switch Child Device" to be installed.
+ *
+ *  Copyright 2019 Andy Poe
+ *
+ *  Licensed under the Apache License, Version 2.0 (the "License"); you may not use this file except
+ *  in compliance with the License. You may obtain a copy of the License at:
+ *
+ *  http://www.apache.org/licenses/LICENSE-2.0
+ *
+ *  Unless required by applicable law or agreed to in writing, software distributed under the License is distributed
+ *  on an "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the License
+ *  for the specific language governing permissions and limitations under the License.
+ *
+ *  Haseman RS-10PM2
+ *
+ *  Author: Andy Poe
+ *
+ */
+
+metadata {
+    definition (name: "Haseman RS-10PM2", namespace: "Z-Wave", author: "Adam Vine", vid:"generic-switch-power-energy") {
+        capability "Sensor"
+        capability "Actuator"
+        capability "Switch"
+        capability "Polling"
+        capability "Configuration"
+        capability "Refresh"
+        capability "Zw Multichannel"
+        capability "Energy Meter"
+        capability "Power Meter"
+        capability "Health Check"
+
+        command "reset"
+        command "onInd", [[name:"id", type: "STRING", description:"Switch Number:"]]
+        command "offInd", [[name:"id", type: "STRING", description:"Switch Number:"]]
+        command "indRefresh", [[name:"id", type: "STRING", description:"Switch Number:"]]
+        command "on1"
+        command "on2"
+        command "on3"
+        command "on4"
+        command "on5"
+        command "on6"
+        command "on7"
+        command "on8"
+        command "on9"
+        command "on10"
+        command "off1"
+        command "off2"
+        command "off3"
+        command "off4"
+        command "off5"
+        command "off6"
+        command "off7"
+        command "off8"
+        command "off9"
+        command "off10"
+        
+        attribute "switch1", "string"
+        attribute "switch2", "string"
+        attribute "switch3", "string"
+        attribute "switch4", "string"
+        attribute "switch5", "string"
+        attribute "switch6", "string"
+        attribute "switch7", "string"
+        attribute "switch8", "string"
+        attribute "switch9", "string"
+        attribute "switch10", "string"
+        attribute "childID", "integer"
+        
+        // Work in Progress multiway single on functionality in driver
+    
+        attribute "SwitchMode1", "string"
+        attribute "SwitchMode2", "string" 
+        attribute "SwitchMode3", "string"
+        attribute "SwitchMode4", "string" 
+        attribute "SwitchMode5", "string"
+        attribute "SwitchMode6", "string"
+        attribute "SwitchMode7", "string"
+        attribute "SwitchMode8", "string" 
+        attribute "SwitchMode9", "string"
+        attribute "SwitchMode10", "string" 
+
+        fingerprint mfr: "0115", prod: "F111", model: "1111", deviceJoinName: "Haseman RS-10PM2"
+
+        fingerprint deviceId: "0x1111", inClusters:"0x5E,0x70,0x85,0x8E,0x7A,0x5A,0x59,0x73,0x86,0x72,0x20,0x60,0x25,0x31,0x32", outClusters: "0x20"
+        
+    }
+    
+     preferences {
+        
+        	def refreshRate = [:]
+		refreshRate << ["1 min" : "Refresh every minute"]
+		refreshRate << ["5 min" : "Refresh every 5 minutes"]
+		refreshRate << ["15 min" : "Refresh every 15 minutes"]
+		refreshRate << ["30 min" : "Refresh every 30 minutes"]
+		refreshRate << ["manual" : "Manually or Polling Only"]
+        
+        input name: "SwitchMode1", type: "enum", defaultValue: "0", required: true,
+            title: "Switch 1 Operating mode:",
+       		options: [["0" : "Normal"],
+                    ["1" : "Single-On Multiway"]]
+        
+        input name: "SwitchMode2", type: "enum", defaultValue: "0", required: true,
+            title: "Switch 2 Operating mode:",
+       		options: [["0" : "Normal"],
+                    ["1" : "Single-On Multiway"]]
+        
+        input name: "SwitchMode3", type: "enum", defaultValue: "0", required: true,
+            title: "Switch 3 Operating mode:",
+       		options: [["0" : "Normal"],
+                    ["1" : "Single-On Multiway"]]
+        
+        input name: "SwitchMode4", type: "enum", defaultValue: "0", required: true,
+            title: "Switch 4 Operating mode:",
+       		options: [["0" : "Normal"],
+                    ["1" : "Single-On Multiway"]]
+        
+        input name: "SwitchMode5", type: "enum", defaultValue: "0", required: true,
+            title: "Switch 5 Operating mode:",
+       		options: [["0" : "Normal"],
+                    ["1" : "Single-On Multiway"]]
+        
+        input name: "SwitchMode6", type: "enum", defaultValue: "0", required: true,
+            title: "Switch 6 Operating mode:",
+       		options: [["0" : "Normal"],
+                    ["1" : "Single-On Multiway"]]
+            
+        input name: "SwitchMode7", type: "enum", defaultValue: "0", required: true,
+            title: "Switch7 Operating mode:",
+       		options: [["0" : "Normal"],
+                    ["1" : "Single-On Multiway"]]
+            
+        input name: "SwitchMode8", type: "enum", defaultValue: "0", required: true,
+            title: "Switch8 Operating mode:",
+       		options: [["0" : "Normal"],
+                    ["1" : "Single-On Multiway"]]
+            
+        input name: "SwitchMode9", type: "enum", defaultValue: "0", required: true,
+            title: "Switch9 Operating mode:",
+       		options: [["0" : "Normal"],
+                    ["1" : "Single-On Multiway"]]
+            
+        input name: "SwitchMode10", type: "enum", defaultValue: "0", required: true,
+            title: "Switch10 Operating mode:",
+       		options: [["0" : "Normal"],
+                    ["1" : "Single-On Multiway"]]
+         
+        input name: "ButtonMode1", type: "enum", defaultValue: "0", required: true,
+            title: "Switch 1 Button mode:",
+       		options: [["0" : "No Button Control"],
+                    ["1" : "Push Button"],
+                    ["2" : "Toggle Button"],
+                    ["3" : "Follower Button"]]
+        
+        input name: "ButtonMode2", type: "enum", defaultValue: "0", required: true,
+            title: "Switch 2 Button mode:",
+       		options: [["0" : "No Button Control"],
+                    ["1" : "Push Button"],
+                    ["2" : "Toggle Button"],
+                    ["3" : "Follower Button"]]
+        
+        input name: "ButtonMode3", type: "enum", defaultValue: "0", required: true,
+            title: "Switch 3 Button mode:",
+       		options: [["0" : "No Button Control"],
+                    ["1" : "Push Button"],
+                    ["2" : "Toggle Button"],
+                    ["3" : "Follower Button"]]
+        
+        input name: "ButtonMode4", type: "enum", defaultValue: "0", required: true,
+            title: "Switch 4 Button mode:",
+       		options: [["0" : "No Button Control"],
+                    ["1" : "Push Button"],
+                    ["2" : "Toggle Button"],
+                    ["3" : "Follower Button"]]
+        
+        input name: "ButtonMode5", type: "enum", defaultValue: "0", required: true,
+            title: "Switch 5 Button mode:",
+       		options: [["0" : "No Button Control"],
+                    ["1" : "Push Button"],
+                    ["2" : "Toggle Button"],
+                    ["3" : "Follower Button"]]
+        
+        input name: "ButtonMode6", type: "enum", defaultValue: "0", required: true,
+            title: "Switch 6 Button mode:",
+       		options: [["0" : "No Button Control"],
+                    ["1" : "Push Button"],
+                    ["2" : "Toggle Button"],
+                    ["3" : "Follower Button"]]
+            
+        input name: "ButtonMode7", type: "enum", defaultValue: "0", required: true,
+            title: "Switch 7 Button mode:",
+       		options: [["0" : "No Button Control"],
+                    ["1" : "Push Button"],
+                    ["2" : "Toggle Button"],
+                    ["3" : "Follower Button"]]
+            
+        input name: "ButtonMode8", type: "enum", defaultValue: "0", required: true,
+            title: "Switch 8 Button mode:",
+       		options: [["0" : "No Button Control"],
+                    ["1" : "Push Button"],
+                    ["2" : "Toggle Button"],
+                    ["3" : "Follower Button"]]
+            
+        input name: "ButtonMode9", type: "enum", defaultValue: "0", required: true,
+            title: "Switch 9 Button mode:",
+       		options: [["0" : "No Button Control"],
+                    ["1" : "Push Button"],
+                    ["2" : "Toggle Button"],
+                    ["3" : "Follower Button"]]
+            
+        input name: "ButtonMode10", type: "enum", defaultValue: "0", required: true,
+            title: "Switch 10 Button mode:",
+       		options: [["0" : "No Button Control"],
+                    ["1" : "Push Button"],
+                    ["2" : "Toggle Button"],
+                    ["3" : "Follower Button"]]
+        
+        input ("refresh_Rate", "enum", title: "Binary Sensor Refresh Rate", options: refreshRate, defaultValue: "manual")
+        input "locale", "enum", title: "Choose refresh date format", required: true, defaultValue: true,
+            options: [US:"US MM/DD/YYYY",UK:"UK DD/MM/YYYY"] //RK
+        
+        input name: "debugOutput",   type: "bool", title: "<b>Enable debug logging?</b>",   description: "<br>", defaultValue: true  
+    }
+
+
+}
+
+def parse(String description) {
+    def result = []
+    // logging("RAW command: $description")
+    if (description.startsWith("Err 106")) {
+        state.sec = 0
+        result = createEvent(descriptionText: description, isStateChange: true)
+    } else {
+        def cmd = zwave.parse(description)
+        if (cmd) {
+            result += zwaveEvent(cmd)
+        } else {
+            logging ("Non-parsed event: ${description}")
+        }
+    }
+
+    def statusTextmsg = ""
+
+    result.each {
+        if ((it instanceof Map) == true && it.find{ it.key == "name" }?.value == "power") {
+            statusTextmsg = "${it.value} W ${device.currentValue('energy')? device.currentValue('energy') : "0"} kWh"
+        }
+        if ((it instanceof Map) == true && it.find{ it.key == "name" }?.value == "energy") {
+            statusTextmsg = "${device.currentValue('power')? device.currentValue('power') : "0"} W ${it.value} kWh"
+        }
+    }
+    if (statusTextmsg != "") sendEvent(name:"statusText", value:statusTextmsg, displayed:false)
+
+    return result
+}
+
+def zwaveEvent(hubitat.zwave.commands.basicv1.BasicSet cmd, ep=null) {
+    logging("BasicSet: $cmd : Endpoint: $ep")
+    def childID = device.currentState("childID").getValue()
+
+    if (ep) {
+        def event
+        childDevices.each { childDevice ->
+            if (childDevice.deviceNetworkId == "$childID-ep$ep") {
+                getChildDevice(childDevice.deviceNetworkId).parse([[name:"switch", value: cmd.value ? "on" : "off"]])
+                sendEvent(name: "switch$ep", value: cmd.value ? "on" : "off", isStateChange: true)
+            }
+        }
+        if (cmd.value) {
+            event = [createEvent([name: "switch", value: "on"])]
+        } else {
+            def allOff = true
+            childDevices.each { n ->
+                if (n.currentState("switch").value != "off") allOff = false
+            }
+            if (allOff) {
+                event = [createEvent([name: "switch", value: "off"])]
+            } else {
+                event = [createEvent([name: "switch", value: "on"])]
+            }
+        }
+        return event
+    }
+}
+
+def zwaveEvent(hubitat.zwave.commands.switchbinaryv1.SwitchBinaryReport cmd, ep=null)
+{
+    logging("SwitchBinaryReport: $cmd : Endpoint: $ep")
+    def childID = device.currentState("childID").getValue()
+    if (ep) {
+        def event
+        
+        childDevices.each { childDevice ->
+            if (childDevice.deviceNetworkId == "$childID-ep$ep") {
+                getChildDevice(childDevice.deviceNetworkId).parse([[name:"switch", value: cmd.value ? "on" : "off"]])
+                sendEvent(name: "switch$ep", value: cmd.value ? "on" : "off", isStateChange: true)
+            }
+        }
+     /*   if (cmd.value) {
+            event = [createEvent([name: "switch", value: "on"])]
+        } else { */
+            def allOff = true
+            childDevices.each { n ->
+                if (n.currentState("switch").value != "off") allOff = false
+            }
+            if (allOff) {
+                event = [createEvent([name: "switch", value: "off"])]
+            } else {
+                event = [createEvent([name: "switch", value: "on"])]
+            }
+      //  }
+        return event
+    } 
+}
+
+def zwaveEvent(hubitat.zwave.commands.meterv3.MeterReport cmd, ep=null) {
+    logging("MeterReport: $cmd : Endpoint: $ep")
+    def map = null
+    if (cmd.meterType == 1) {
+        if (cmd.scale == 0) {
+            map = [name: "energy", value: cmd.scaledMeterValue,
+                   unit: "kWh"]
+        } else if (cmd.scale == 6) {
+            map = [name: "powerfactor", value: cmd.scaledMeterValue,
+                   unit: "Cos"]
+        } else if (cmd.scale == 2) {
+            map = [name: "power", value: cmd.scaledMeterValue, 
+            	   unit: "W"]
+    }
+  }
+
+    if (map) {
+        if (cmd.previousMeterValue && cmd.previousMeterValue != cmd.meterValue) {
+            map.descriptionText = "${device.displayName} ${map.name} is ${map.value} ${map.unit}, previous: ${cmd.scaledPreviousMeterValue}"
+        }
+        createEvent(map)
+    } else {
+        null
+    }
+}
+
+def zwaveEvent(hubitat.zwave.commands.sensormultilevelv5.SensorMultilevelReport cmd, ep=null) {
+    logging("Report: $cmd : Endpoint: $ep")
+    def map = [ displayed: true, value: cmd.scaledSensorValue.toString() ]
+    switch (cmd.sensorType) {
+        case 4:
+            map.name = "power"
+            map.unit = cmd.scale == 1 ? "Btu/h" : "W"
+            break;
+        case 0xF:
+            map.name = "voltage"
+            map.unit = cmd.scale == 1 ? "mV" : "V"
+            break;
+        case 0x10:
+            map.name = "currentA"
+            map.unit = cmd.scale == 1 ? "mA" : "A"
+            break;
+        case 0x20:
+            map.name = "frequency"
+            map.unit = "Hz"
+            break;
+    }
+    createEvent(map)
+}
+
+def zwaveEvent(hubitat.zwave.commands.multichannelv4.MultiChannelCapabilityReport cmd)
+{
+    //log.debug "multichannelv3.MultiChannelCapabilityReport $cmd"
+
+    if (cmd.endPoint == 10 ) {
+        def currstate = device.currentState("switch10").getValue()
+        if (currstate == "on")
+            sendEvent(name: "switch10", value: "off", isStateChange: true, display: false)
+        else if (currstate == "off")
+            sendEvent(name: "switch10", value: "on", isStateChange: true, display: false)
+    }
+    if (cmd.endPoint == 9 ) {
+        def currstate = device.currentState("switch9").getValue()
+        if (currstate == "on")
+            sendEvent(name: "switch9", value: "off", isStateChange: true, display: false)
+        else if (currstate == "off")
+            sendEvent(name: "switch9", value: "on", isStateChange: true, display: false)
+    }
+    if (cmd.endPoint == 8 ) {
+        def currstate = device.currentState("switch8").getValue()
+        if (currstate == "on")
+            sendEvent(name: "switch8", value: "off", isStateChange: true, display: false)
+        else if (currstate == "off")
+            sendEvent(name: "switch8", value: "on", isStateChange: true, display: false)
+    }
+    if (cmd.endPoint == 7 ) {
+        def currstate = device.currentState("switch7").getValue()
+        if (currstate == "on")
+            sendEvent(name: "switch7", value: "off", isStateChange: true, display: false)
+        else if (currstate == "off")
+            sendEvent(name: "switch7", value: "on", isStateChange: true, display: false)
+    }
+    if (cmd.endPoint == 6 ) {
+        def currstate = device.currentState("switch6").getValue()
+        if (currstate == "on")
+            sendEvent(name: "switch6", value: "off", isStateChange: true, display: false)
+        else if (currstate == "off")
+            sendEvent(name: "switch6", value: "on", isStateChange: true, display: false)
+    }
+    if (cmd.endPoint == 5 ) {
+        def currstate = device.currentState("switch5").getValue()
+        if (currstate == "on")
+            sendEvent(name: "switch5", value: "off", isStateChange: true, display: false)
+        else if (currstate == "off")
+            sendEvent(name: "switch5", value: "on", isStateChange: true, display: false)
+    }
+    if (cmd.endPoint == 4 ) {
+        def currstate = device.currentState("switch4").getValue()
+        if (currstate == "on")
+            sendEvent(name: "switch4", value: "off", isStateChange: true, display: false)
+        else if (currstate == "off")
+            sendEvent(name: "switch4", value: "on", isStateChange: true, display: false)
+    }
+    if (cmd.endPoint == 3 ) {
+        def currstate = device.currentState("switch3").getValue()
+        if (currstate == "on")
+            sendEvent(name: "switch3", value: "off", isStateChange: true, display: false)
+        else if (currstate == "off")
+            sendEvent(name: "switch3", value: "on", isStateChange: true, display: false)
+    }
+    if (cmd.endPoint == 2 ) {
+        def currstate = device.currentState("switch2").getValue()
+        if (currstate == "on")
+            sendEvent(name: "switch2", value: "off", isStateChange: true, display: false)
+        else if (currstate == "off")
+            sendEvent(name: "switch2", value: "on", isStateChange: true, display: false)
+    }
+    else if (cmd.endPoint == 1 ) {
+        def currstate = device.currentState("switch1").getValue()
+        if (currstate == "on")
+            sendEvent(name: "switch1", value: "off", isStateChange: true, display: false)
+        else if (currstate == "off")
+            sendEvent(name: "switch1", value: "on", isStateChange: true, display: false)
+    }
+}
+
+def zwaveEvent(hubitat.zwave.commands.multichannelv4.MultiChannelCmdEncap cmd) {
+
+ logging("MultiChannelCmdEncap ${cmd}")
+    def encapsulatedCommand = cmd.encapsulatedCommand([0x32: 3, 0x25: 1, 0x20: 1])
+    if (encapsulatedCommand) {
+        zwaveEvent(encapsulatedCommand, cmd.sourceEndPoint as Integer)
+    }
+    
+
+  //  getChildDevice(cd.deviceNetworkId).parse([[name:"switch", value:"on", descriptionText:"${cd.displayName} was turned on"]])
+}
+
+// check by log
+def zwaveEvent(hubitat.zwave.commands.associationv2.AssociationReport cmd) {
+    logging ("AssociationReport $cmd")
+    if (zwaveHubNodeId in cmd.nodeId) state."association${cmd.groupingIdentifier}" = true
+    else state."association${cmd.groupingIdentifier}" = false
+}
+
+// check by log
+def zwaveEvent(hubitat.zwave.commands.multichannelassociationv2.MultiChannelAssociationReport cmd) {
+    logging ("MultiChannelAssociationReport $cmd")
+    if (cmd.groupingIdentifier == 1) {
+        if ([0,zwaveHubNodeId,1] == cmd.nodeId) state."associationMC${cmd.groupingIdentifier}" = true
+        else state."associationMC${cmd.groupingIdentifier}" = false
+    }
+}
+
+def zwaveEvent(hubitat.zwave.Command cmd) {
+    logging ("Unhandled event $cmd")
+// This will capture any commands not handled by other instances of zwaveEvent
+// and is recommended for development so you can see every command the device sends
+    return createEvent(descriptionText: "${device.displayName}: ${cmd}")
+}
+
+def zwaveEvent(hubitat.zwave.commands.switchallv1.SwitchAllReport cmd) {
+    logging ("SwitchAllReport $cmd")
+}
+
+def zwaveEvent(hubitat.zwave.commands.configurationv2.ConfigurationReport cmd) {
+    update_current_properties(cmd)
+    logging("${device.displayName} parameter '${cmd.parameterNumber}' with a byte size of '${cmd.size}' is set to '${cmd2Integer(cmd.configurationValue)}'")
+}
+
+def handler() {
+    logging ("handlerMethod called at")
+}
+
+def refresh() {
+    def cmds = []
+    cmds << encap(zwave.switchBinaryV1.switchBinaryGet(), 1)
+    cmds << encap(zwave.switchBinaryV1.switchBinaryGet(), 2)
+    cmds << encap(zwave.switchBinaryV1.switchBinaryGet(), 3)
+    cmds << encap(zwave.switchBinaryV1.switchBinaryGet(), 4)
+    cmds << encap(zwave.switchBinaryV1.switchBinaryGet(), 5)
+    cmds << encap(zwave.switchBinaryV1.switchBinaryGet(), 6)
+    cmds << encap(zwave.switchBinaryV1.switchBinaryGet(), 7)
+    cmds << encap(zwave.switchBinaryV1.switchBinaryGet(), 8)
+    cmds << encap(zwave.switchBinaryV1.switchBinaryGet(), 9)
+    cmds << encap(zwave.switchBinaryV1.switchBinaryGet(), 10)
+    cmds << encap(zwave.meterV3.meterGet(scale: 0), 14)
+    cmds << encap(zwave.meterV3.meterGet(scale: 2), 14)
+    cmds << encap(zwave.meterV3.meterGet(scale: 6), 14)
+    cmds << encap(zwave.meterV3.meterGet(scale: 0), 15)
+    cmds << encap(zwave.meterV3.meterGet(scale: 2), 15)
+    cmds << encap(zwave.meterV3.meterGet(scale: 6), 15)
+    cmds << encap(zwave.meterV3.meterGet(scale: 0), 16)
+    cmds << encap(zwave.meterV3.meterGet(scale: 2), 16)
+    cmds << encap(zwave.meterV3.meterGet(scale: 6), 16)
+    cmds << encap(zwave.sensorMultilevelV5.sensorMultilevelGet(),14)
+    cmds << encap(zwave.sensorMultilevelV5.sensorMultilevelGet(),15)
+    cmds << encap(zwave.sensorMultilevelV5.sensorMultilevelGet(),16)
+    commands(cmds, 600)
+    
+}
+
+def reset() {
+    logging("reset()")
+    def cmds = []
+    cmds << encap(zwave.meterV3.meterReset(), 14)
+    cmds << encap(zwave.meterV3.meterReset(), 15)
+    cmds << encap(zwave.meterV3.meterReset(), 16)
+    cmds << encap(zwave.meterV3.meterGet(scale: 0), 14)
+    cmds << encap(zwave.meterV3.meterGet(scale: 2), 14)
+    cmds << encap(zwave.meterV3.meterGet(scale: 6), 14)
+    cmds << encap(zwave.meterV3.meterGet(scale: 0), 15)
+    cmds << encap(zwave.meterV3.meterGet(scale: 2), 15)
+    cmds << encap(zwave.meterV3.meterGet(scale: 6), 15)
+    cmds << encap(zwave.meterV3.meterGet(scale: 0), 16)
+    cmds << encap(zwave.meterV3.meterGet(scale: 2), 16)
+    cmds << encap(zwave.meterV3.meterGet(scale: 6), 16)
+    cmds << encap(zwave.sensorMultilevelV5.sensorMultilevelGet(),14)
+    cmds << encap(zwave.sensorMultilevelV5.sensorMultilevelGet(),15)
+    cmds << encap(zwave.sensorMultilevelV5.sensorMultilevelGet(),16)
+    commands(cmds, 600)
+}
+
+def ping() {
+    def cmds = []
+    cmds << encap(zwave.switchBinaryV1.switchBinaryGet(), 1)
+    cmds << encap(zwave.switchBinaryV1.switchBinaryGet(), 2)
+    cmds << encap(zwave.switchBinaryV1.switchBinaryGet(), 3)
+    cmds << encap(zwave.switchBinaryV1.switchBinaryGet(), 4)
+    cmds << encap(zwave.switchBinaryV1.switchBinaryGet(), 5)
+    cmds << encap(zwave.switchBinaryV1.switchBinaryGet(), 6)
+    cmds << encap(zwave.switchBinaryV1.switchBinaryGet(), 7)
+    cmds << encap(zwave.switchBinaryV1.switchBinaryGet(), 8)
+    cmds << encap(zwave.switchBinaryV1.switchBinaryGet(), 9)
+    cmds << encap(zwave.switchBinaryV1.switchBinaryGet(), 10)
+    commands(cmds, 600)
+}
+
+def zwaveEvent(hubitat.zwave.commands.manufacturerspecificv2.ManufacturerSpecificReport cmd) {
+    def msr = String.format("%04X-%04X-%04X", cmd.manufacturerId, cmd.productTypeId, cmd.productId)
+    logging("msr: $msr")
+    updateDataValue("MSR", msr)
+}
+
+def poll() {
+    def cmds = []
+    cmds << encap(zwave.switchBinaryV1.switchBinaryGet(), 1)
+    cmds << encap(zwave.switchBinaryV1.switchBinaryGet(), 2)
+    cmds << encap(zwave.switchBinaryV1.switchBinaryGet(), 3)
+    cmds << encap(zwave.switchBinaryV1.switchBinaryGet(), 4)
+    cmds << encap(zwave.switchBinaryV1.switchBinaryGet(), 5)
+    cmds << encap(zwave.switchBinaryV1.switchBinaryGet(), 6)
+    cmds << encap(zwave.switchBinaryV1.switchBinaryGet(), 7)
+    cmds << encap(zwave.switchBinaryV1.switchBinaryGet(), 8)
+    cmds << encap(zwave.switchBinaryV1.switchBinaryGet(), 9)
+    cmds << encap(zwave.switchBinaryV1.switchBinaryGet(), 10)
+    commands(cmds, 600)
+}
+
+def configure() {
+    state.enableDebugging = settings.enableDebugging
+    logging("Configuring Device For Hubitat Use")
+    logging(ButtonMode1)
+    logging(ButtonMode6)
+    def intButtonMode1 = ButtonMode1 as int
+    def intButtonMode2 = ButtonMode2 as int
+    def intButtonMode3 = ButtonMode3 as int
+    def intButtonMode4 = ButtonMode4 as int
+    def intButtonMode5 = ButtonMode5 as int
+    def intButtonMode6 = ButtonMode6 as int
+    def intButtonMode7 = ButtonMode7 as int
+    def intButtonMode8 = ButtonMode8 as int
+    def intButtonMode9 = ButtonMode9 as int
+    def intButtonMode10 = ButtonMode10 as int 
+    
+    def cmds = []
+
+        cmds +=  zwave.associationV3.associationRemove(groupingIdentifier: 1, nodeId: zwaveHubNodeId ).format()
+        cmds +=  zwave.associationV3.associationRemove(groupingIdentifier: 2, nodeId: zwaveHubNodeId ).format()
+        cmds +=  zwave.associationV3.associationRemove(groupingIdentifier: 3, nodeId: zwaveHubNodeId ).format()
+        cmds +=  zwave.associationV3.associationRemove(groupingIdentifier: 4, nodeId: zwaveHubNodeId ).format()
+        cmds +=  zwave.associationV3.associationRemove(groupingIdentifier: 5, nodeId: zwaveHubNodeId ).format()
+        cmds +=  zwave.associationV3.associationRemove(groupingIdentifier: 6, nodeId: zwaveHubNodeId ).format()
+        cmds +=  zwave.associationV3.associationRemove(groupingIdentifier: 7, nodeId: zwaveHubNodeId ).format()
+        cmds +=  zwave.associationV3.associationRemove(groupingIdentifier: 8, nodeId: zwaveHubNodeId ).format()
+        cmds +=  zwave.associationV3.associationRemove(groupingIdentifier: 9, nodeId: zwaveHubNodeId ).format()
+        cmds +=  zwave.associationV3.associationRemove(groupingIdentifier: 10, nodeId: zwaveHubNodeId ).format()
+        cmds +=  zwave.associationV3.associationRemove(groupingIdentifier: 11, nodeId: zwaveHubNodeId ).format()
+        cmds +=  zwave.configurationV1.configurationSet(configurationValue: [255], parameterNumber: 11, size: 1).format()
+        cmds +=  zwave.configurationV1.configurationSet(configurationValue: [intButtonMode1], parameterNumber: 65, size: 2).format()
+        cmds +=  zwave.configurationV1.configurationSet(configurationValue: [intButtonMode2], parameterNumber: 66, size: 2).format()
+        cmds +=  zwave.configurationV1.configurationSet(configurationValue: [intButtonMode3], parameterNumber: 67, size: 2).format()
+        cmds +=  zwave.configurationV1.configurationSet(configurationValue: [intButtonMode4], parameterNumber: 68, size: 2).format()
+        cmds +=  zwave.configurationV1.configurationSet(configurationValue: [intButtonMode5], parameterNumber: 69, size: 2).format()
+        cmds +=  zwave.configurationV1.configurationSet(configurationValue: [intButtonMode6], parameterNumber: 70, size: 2).format()
+        cmds +=  zwave.configurationV1.configurationSet(configurationValue: [intButtonMode7], parameterNumber: 71, size: 2).format()
+        cmds +=  zwave.configurationV1.configurationSet(configurationValue: [intButtonMode8], parameterNumber: 72, size: 2).format()
+        cmds +=  zwave.configurationV1.configurationSet(configurationValue: [intButtonMode9], parameterNumber: 73, size: 2).format()
+        cmds +=  zwave.configurationV1.configurationSet(configurationValue: [intButtonMode10], parameterNumber: 74, size: 2).format()
+        cmds +=  zwave.multiChannelAssociationV4.multiChannelAssociationRemove(groupingIdentifier: 1, nodeId: [zwaveHubNodeId]).format()
+      //  cmds +=  zwave.multiChannelAssociationV4.multiChannelAssociationRemove(groupingIdentifier: 1, multiChannelNodeIds: [[nodeId:1, bitAddress:0, endPointId:0]]).format()
+        cmds +=  zwave.multiChannelAssociationV4.multiChannelAssociationSet(groupingIdentifier: 1, multiChannelNodeIds: [[nodeId:1, bitAddress:0, endPointId:1]]).format()
+        cmds +=  zwave.multiChannelAssociationV4.multiChannelAssociationRemove(groupingIdentifier: 2, multiChannelNodeIds: [[nodeId:1, bitAddress:0, endPointId:1]]).format()
+        cmds +=  zwave.multiChannelAssociationV4.multiChannelAssociationRemove(groupingIdentifier: 3, multiChannelNodeIds: [[nodeId:1, bitAddress:0, endPointId:2]]).format()
+        cmds +=  zwave.multiChannelAssociationV4.multiChannelAssociationRemove(groupingIdentifier: 4, multiChannelNodeIds: [[nodeId:1, bitAddress:0, endPointId:3]]).format()
+        cmds +=  zwave.multiChannelAssociationV4.multiChannelAssociationRemove(groupingIdentifier: 5, multiChannelNodeIds: [[nodeId:1, bitAddress:0, endPointId:4]]).format()
+        cmds +=  zwave.multiChannelAssociationV4.multiChannelAssociationRemove(groupingIdentifier: 6, multiChannelNodeIds: [[nodeId:1, bitAddress:0, endPointId:5]]).format()
+        cmds +=  zwave.multiChannelAssociationV4.multiChannelAssociationRemove(groupingIdentifier: 7, multiChannelNodeIds: [[nodeId:1, bitAddress:0, endPointId:6]]).format()
+        cmds +=  zwave.multiChannelAssociationV4.multiChannelAssociationRemove(groupingIdentifier: 8, multiChannelNodeIds: [[nodeId:1, bitAddress:0, endPointId:7]]).format()
+        cmds +=  zwave.multiChannelAssociationV4.multiChannelAssociationRemove(groupingIdentifier: 9, multiChannelNodeIds: [[nodeId:1, bitAddress:0, endPointId:8]]).format()
+        cmds +=  zwave.multiChannelAssociationV4.multiChannelAssociationRemove(groupingIdentifier: 10, multiChannelNodeIds: [[nodeId:1, bitAddress:0, endPointId:9]]).format() 
+        cmds +=  zwave.multiChannelAssociationV4.multiChannelAssociationRemove(groupingIdentifier: 11, multiChannelNodeIds: [[nodeId:1, bitAddress:0, endPointId:10]]).format() 
+    
+        if (cmds) return delayBetween(cmds, 500)
+    
+}
+
+def zwaveEvent(hubitat.zwave.commands.centralscenev1.CentralSceneNotification cmd) {
+    logging("CentralSceneNotification: $cmd")
+    logging("sceneNumber: $cmd.sceneNumber")
+    logging("sequenceNumber: $cmd.sequenceNumber")
+    logging("keyAttributes: $cmd.keyAttributes")
+
+    buttonEvent(cmd.keyAttributes + 1, (cmd.sceneNumber == 1? "pushed" : "held"))
+
+}
+
+// check by log
+def buttonEvent(button, value) {
+    logging("buttonEvent() Button:$button, Value:$value")
+    createEvent(name: "button", value: value, data: [buttonNumber: button], descriptionText: "$device.displayName button $button was $value", isStateChange: true)
+}
+
+/**
+ * Triggered when Done button is pushed on Preference Pane
+ */
+def updated()
+{
+    if (debugOutput) runIn(1800,logsOff)  
+    
+    logging("updated() is being called")
+    if (!childDevices) {
+        createChildDevices()
+    }
+    else if (device.label != state.oldLabel) {
+        childDevices.each {
+            if (it.label == "${state.oldLabel} (S${channelNumber(it.deviceNetworkId)})") {
+                def newLabel = "${device.displayName} (S${channelNumber(it.deviceNetworkId)})"
+                it.setLabel(newLabel)
+            }
+        }
+        state.oldLabel = device.label
+    }
+    sendEvent(name: "checkInterval", value: 2 * 30 * 60 + 2 * 60, displayed: false, data: [protocol: "zwave", hubHardwareId: device.hub.hardwareID])
+    def cmds = update_needed_settings()
+
+    sendEvent(name:"needUpdate", value: device.currentValue("needUpdate"), displayed:false, isStateChange: true)
+
+    if (cmds != []) response(commands(cmds))
+}
+
+def on() {
+
+    
+  commands([
+            onInd(1),
+            onInd(2),
+            onInd(3),
+            onInd(4),
+            onInd(5),
+            onInd(6),
+            onInd(7),
+            onInd(8),
+            onInd(9),
+            onInd(10)
+
+    ])
+
+
+}
+
+
+def off() {
+    commands([
+            encap(zwave.basicV1.basicSet(value: 0x00), 1),
+            encap(zwave.switchBinaryV1.switchBinaryGet(), 1),
+            encap(zwave.basicV1.basicSet(value: 0x00), 2),
+            encap(zwave.switchBinaryV1.switchBinaryGet(), 2),
+            encap(zwave.basicV1.basicSet(value: 0x00), 3),
+            encap(zwave.switchBinaryV1.switchBinaryGet(), 3),
+            encap(zwave.basicV1.basicSet(value: 0x00), 4),
+            encap(zwave.switchBinaryV1.switchBinaryGet(), 4),
+            encap(zwave.basicV1.basicSet(value: 0x00), 5),
+            encap(zwave.switchBinaryV1.switchBinaryGet(), 5),
+            encap(zwave.basicV1.basicSet(value: 0x00), 6),
+            encap(zwave.switchBinaryV1.switchBinaryGet(), 6),
+            encap(zwave.basicV1.basicSet(value: 0x00), 7),
+            encap(zwave.switchBinaryV1.switchBinaryGet(), 7),
+            encap(zwave.basicV1.basicSet(value: 0x00), 8),
+            encap(zwave.switchBinaryV1.switchBinaryGet(), 8),
+            encap(zwave.basicV1.basicSet(value: 0x00), 9),
+            encap(zwave.switchBinaryV1.switchBinaryGet(), 9),
+            encap(zwave.basicV1.basicSet(value: 0x00), 10),
+            encap(zwave.switchBinaryV1.switchBinaryGet(), 10)
+
+    ])
+}
+
+def on1(){
+   onInd(1) 
+}
+def on2(){
+   onInd(2) 
+}
+def on3(){
+   onInd(3) 
+}
+def on4(){
+   onInd(4) 
+}
+def on5(){
+   onInd(5) 
+}
+def on6(){
+   onInd(6) 
+}
+def on7(){
+   onInd(7) 
+}
+def on8(){
+   onInd(8) 
+}
+def on9(){
+   onInd(9) 
+}
+def on10(){
+   onInd(10) 
+}
+
+def off1(){
+   offInd(1) 
+}
+def off2(){
+   offInd(2) 
+}
+def off3(){
+   offInd(3) 
+}
+def off4(){
+   offInd(4) 
+}
+def off5(){
+   offInd(5) 
+}
+def off6(){
+   offInd(6) 
+}
+def off7(){
+   offInd(7) 
+}
+def off8(){
+   offInd(8) 
+}
+def off9(){
+   offInd(9) 
+}
+def off10(){
+   offInd(10) 
+}
+
+
+def onInd(id) {
+   logging("onInd($id)")
+    def useID = id as int
+    def cmds = new hubitat.device.HubMultiAction()
+	cmds.add(new hubitat.device.HubAction(command(encap(zwave.basicV1.basicSet(value: 0xFF), useID)), hubitat.device.Protocol.ZWAVE))
+	cmds.add(new hubitat.device.HubAction(command(encap(zwave.switchBinaryV1.switchBinaryGet(), useID)), hubitat.device.Protocol.ZWAVE))
+	sendHubCommand(cmds)
+
+}
+
+def offInd(id) {
+   logging("offInd($id)")
+    def useID = id as int
+    def cmds = new hubitat.device.HubMultiAction()
+	cmds.add(new hubitat.device.HubAction(command(encap(zwave.basicV1.basicSet(value: 0x00), useID)), hubitat.device.Protocol.ZWAVE))
+	cmds.add(new hubitat.device.HubAction(command(encap(zwave.switchBinaryV1.switchBinaryGet(), useID)), hubitat.device.Protocol.ZWAVE))
+	sendHubCommand(cmds)
+    
+}
+
+def indRefresh(id) {
+    def useID = id as int
+    def cmds = new hubitat.device.HubMultiAction()
+	cmds.add(new hubitat.device.HubAction(command(encap(zwave.switchBinaryV1.switchBinaryGet(), useID)), hubitat.device.Protocol.ZWAVE))
+	sendHubCommand(cmds)    
+        
+}
+
+
+void childOn(dni) {
+    logging("childOn($dni.deviceNetworkId)")
+  //  logging(channelNumber(dni.deviceNetworkId))
+    
+    def switchNum = dni.deviceNetworkId
+    
+    def childDeviceID = switchNum.split("-ep")[0] as int
+    sendEvent(name: "childID", value: childDeviceID, isStateChange: false)
+    
+    def id = channelNumber(switchNum)
+    
+    switch(id) {            
+			
+        case 1:
+            if (SwitchMode1 == "0"){
+                logging("Switch $id is set to normal, turning on")            
+                onInd(id)
+            }
+                else if (SwitchMode1 == "1"){
+                logging("Switch $id is set to Single On Multiway, ensuring no other multway switches are on")
+                multiWay(id)    
+                }   
+            break
+        case 2: 
+            if (SwitchMode2 == "0"){
+                logging("Switch $id is set to normal, turning on")   
+                onInd(id)
+            }
+                else if (SwitchMode2 == "1"){
+                logging("Switch $id is set to Single On Multiway, ensuring no other multway switches are on")
+                multiWay(id)    
+                }   
+            break
+        case 3: 
+            if (SwitchMode3 == "0"){
+                logging("Switch $id is set to normal, turning on")   
+                onInd(id)
+            }
+              else if (SwitchMode3 == "1"){
+                logging("Switch $id is set to Single On Multiway, ensuring no other multway switches are on")
+                multiWay(id)    
+                }
+            break
+        case 4: 
+            if (SwitchMode4 == "0"){
+                logging("Switch $id is set to normal, turning on")   
+                onInd(id)
+            }
+              else if (SwitchMode4 == "1"){
+                logging("Switch $id is set to Single On Multiway, ensuring no other multway switches are on")
+                multiWay(id)    
+                }
+            break
+        case 5: 
+            if (SwitchMode5 == "0"){
+                logging("Switch $id is set to normal, turning on")   
+                onInd(id)
+            }
+              else if (SwitchMode5 == "1"){
+                logging("Switch $id is set to Single On Multiway, ensuring no other multway switches are on")
+                multiWay(id)    
+                }
+            break
+        case 6: 
+            if (SwitchMode6 == "0"){
+                logging("Switch $id is set to normal, turning on")   
+                onInd(id)
+            }
+              else if (SwitchMode6 == "1"){
+                logging("Switch $id is set to Single On Multiway, ensuring no other multway switches are on")
+                multiWay(id)    
+                }
+            break
+        case 7: 
+            if (SwitchMode7 == "0"){
+                logging("Switch $id is set to normal, turning on")   
+                onInd(id)
+            }
+              else if (SwitchMode7 == "1"){
+                logging("Switch $id is set to Single On Multiway, ensuring no other multway switches are on")
+                multiWay(id)    
+                }
+            break
+        case 8: 
+            if (SwitchMode8 == "0"){
+                logging("Switch $id is set to normal, turning on")   
+                onInd(id)
+            }
+              else if (SwitchMode8 == "1"){
+                logging("Switch $id is set to Single On Multiway, ensuring no other multway switches are on")
+                multiWay(id)    
+                }
+            break
+        case 9: 
+            if (SwitchMode9 == "0"){
+                logging("Switch $id is set to normal, turning on")   
+                onInd(id)
+            }
+              else if (SwitchMode9 == "1"){
+                logging("Switch $id is set to Single On Multiway, ensuring no other multway switches are on")
+                multiWay(id)    
+                }
+            break
+        case 10: 
+            if (SwitchMode10 == "0"){
+                logging("Switch $id is set to normal, turning on")   
+                onInd(id)
+            }
+              else if (SwitchMode10 == "1"){
+                logging("Switch $id is set to Single On Multiway, ensuring no other multway switches are on")
+                multiWay(id)    
+                }
+            break
+      }
+   // onInd(channelNumber(switchNum))
+
+}
+
+def multiWay(id){
+                        def currID = id
+                        
+                        def switchState1 = "proceed"
+                        def switchState2 = "proceed"
+                        def switchState3 = "proceed"
+                        def switchState4 = "proceed"
+                        def switchState5 = "proceed"
+                        def switchState6 = "proceed"
+                        def switchState7 = "proceed"
+                        def switchState8 = "proceed"
+                        def switchState9 = "proceed"
+                        def switchState10 = "proceed" 
+                    
+                        currstate1 = device.currentState("switch1").getValue()
+                        currstate2 = device.currentState("switch2").getValue()
+                        currstate3 = device.currentState("switch3").getValue()
+                        currstate4 = device.currentState("switch4").getValue()
+                        currstate5 = device.currentState("switch5").getValue()
+                        currstate6 = device.currentState("switch6").getValue()
+                        currstate7 = device.currentState("switch7").getValue()
+                        currstate8 = device.currentState("switch8").getValue()
+                        currstate9 = device.currentState("switch9").getValue()
+                        currstate10 = device.currentState("switch10").getValue()
+                    
+                        if (SwitchMode1 == "1" && currstate1 == "on" && currID != 1) { 
+                            switchState1 = "stop"
+                            offInd(1)
+                            } 
+                        if (SwitchMode2 == "1" && currstate2 == "on" && currID != 2) { 
+                            switchState2 = "stop"
+                            offInd(2)
+                            }
+                         if (SwitchMode3 == "1" && currstate3 == "on" && currID != 3) { 
+                            offInd(3)
+                            switchState3 = "stop"
+                            }
+                         if (SwitchMode4 == "1" && currstate4 == "on" && currID != 4) { 
+                            offInd(4)
+                            switchState4 = "stop"
+                            }
+                         if (SwitchMode5 == "1" && currstate5 == "on" && currID != 5) { 
+                            offInd(5)
+                            switchState5 = "stop"
+                            }
+                         if (SwitchMode6 == "1" && currstate6 == "on" && currID != 6) { 
+                            offInd(6)
+                            switchState6 = "stop"
+                            }
+                        if (SwitchMode7 == "1" && currstate7 == "on" && currID != 7) { 
+                            offInd(7)
+                            switchState3 = "stop"
+                            }
+                         if (SwitchMode8 == "1" && currstate8 == "on" && currID != 8) { 
+                            offInd(8)
+                            switchState4 = "stop"
+                            }
+                         if (SwitchMode9 == "1" && currstate9 == "on" && currID != 9) { 
+                            offInd(9)
+                            switchState5 = "stop"
+                            }
+                         if (SwitchMode10 == "1" && currstate10 == "on" && currID != 10) { 
+                            offInd(10)
+                            switchState6 = "stop"
+                            }
+                    
+                            if (switchState1 == "proceed" && switchState2 == "proceed" && switchState3 == "proceed" && switchState4 == "proceed" && switchState5 == "proceed" && switchState6 == "proceed"){
+                
+                            logging("All other multiway switches are off so good to go - turning on $id")
+                           
+                            onInd(id)    
+                            }
+                            else {
+                            logging("not all multiway switches off so cannot proceed, repeating")  
+                            runIn(2,multiWay, [data:id])
+                            }
+    
+}
+
+void childOff(dni) {
+    
+    logging("childOff($dni.deviceNetworkId)")
+ //   logging(channelNumber(dni.deviceNetworkId))
+    
+    def switchNum = dni.deviceNetworkId
+    
+    def childDeviceID = switchNum.split("-ep")[0] as int
+    sendEvent(name: "childID", value: childDeviceID, isStateChange: false)
+    
+    offInd(channelNumber(switchNum))
+
+}
+
+void childRefresh(dni) {
+    logging("childRefresh($dni)")
+    def switchNum = dni.deviceNetworkId
+    
+    def childDeviceID = switchNum.split("-ep")[0] as int
+    sendEvent(name: "childID", value: childDeviceID, isStateChange: false)
+    
+    indRefresh(channelNumber(switchNum))
+    
+}
+
+void childReset(String dni) {
+    logging("childReset($dni)")
+    def cmds = []
+    cmds << new hubitat.device.HubAction(command(encap(zwave.meterV2.meterReset(), channelNumber(dni))))
+    cmds << new hubitat.device.HubAction(command(encap(zwave.meterV2.meterGet(scale: 0), channelNumber(dni))))
+    cmds << new hubitat.device.HubAction(command(encap(zwave.meterV2.meterGet(scale: 2), channelNumber(dni))))
+    commands(cmds, 1000)
+}
+
+private encap(cmd, endpoint) {
+    if (endpoint) {
+        zwave.multiChannelV3.multiChannelCmdEncap(destinationEndPoint:endpoint).encapsulate(cmd)
+    } else {
+        cmd
+    }
+}
+
+def zwaveEvent(hubitat.zwave.commands.securityv1.SecurityMessageEncapsulation cmd) {
+    state.sec = 1
+    def encapsulatedCommand = cmd.encapsulatedCommand([0x20: 1, 0x32: 3, 0x25: 1, 0x98: 1, 0x70: 2, 0x85: 2, 0x9B: 1, 0x90: 1, 0x73: 1, 0x30: 1, 0x28: 1, 0x2B: 1]) // can specify command class versions here like in zwave.parse
+    if (encapsulatedCommand) {
+        return zwaveEvent(encapsulatedCommand)
+    } else {
+        log.warn "Unable to extract encapsulated cmd from $cmd"
+        createEvent(descriptionText: cmd.toString())
+    }
+}
+
+def update_current_properties(cmd)
+{
+    def currentProperties = state.currentProperties ?: [:]
+
+    currentProperties."${cmd.parameterNumber}" = cmd.configurationValue
+
+    if (settings."${cmd.parameterNumber}" != null)
+    {
+        if (convertParam(cmd.parameterNumber, settings."${cmd.parameterNumber}") == cmd2Integer(cmd.configurationValue))
+        {
+            sendEvent(name:"needUpdate", value:"NO", displayed:false, isStateChange: true)
+        }
+        else
+        {
+            sendEvent(name:"needUpdate", value:"YES", displayed:false, isStateChange: true)
+        }
+    }
+
+    state.currentProperties = currentProperties
+}
+
+def update_needed_settings()
+{
+    def cmds = []
+    def currentProperties = state.currentProperties ?: [:]
+
+   /* def configuration = parseXml(configuration_model())*/
+    def isUpdateNeeded = "NO"
+
+    sendEvent(name:"numberOfButtons", value:"5")
+
+    if(!state.associationMC1) {
+        logging("Configuring")
+        configure()
+    }
+    if(state.association2){
+        logging("Removing association group 2")
+        cmds << zwave.associationV2.associationRemove(groupingIdentifier:2, nodeId:zwaveHubNodeId)
+        cmds << zwave.associationV2.associationGet(groupingIdentifier:2)
+    }
+    if(state.association4){
+        logging("Removing association group 4")
+        cmds << zwave.associationV2.associationRemove(groupingIdentifier:4, nodeId:zwaveHubNodeId)
+        cmds << zwave.associationV2.associationGet(groupingIdentifier:4)
+    }
+
+
+    sendEvent(name:"needUpdate", value: isUpdateNeeded, displayed:false, isStateChange: true)
+    return cmds
+}
+
+def convertParam(number, value) {
+    def parValue
+    switch (number){
+        case 28:
+            parValue = (value == "true" ? 1 : 0)
+            parValue += (settings."fc_2" == "true" ? 2 : 0)
+            parValue += (settings."fc_3" == "true" ? 4 : 0)
+            parValue += (settings."fc_4" == "true" ? 8 : 0)
+            break
+        case 29:
+            parValue = (value == "true" ? 1 : 0)
+            parValue += (settings."sc_2" == "true" ? 2 : 0)
+            parValue += (settings."sc_3" == "true" ? 4 : 0)
+            parValue += (settings."sc_4" == "true" ? 8 : 0)
+            break
+        default:
+            parValue = value
+            break
+    }
+
+    return parValue.toInteger()
+}
+
+private logging(msg) {
+	if (settings?.debugOutput || settings?.debugOutput == null) {
+		log.debug "$msg"
+	}
+}
+
+/**
+ * Convert 1 and 2 bytes values to integer
+ */
+def cmd2Integer(array) {
+
+    switch(array.size()) {
+        case 1:
+            array[0]
+            break
+        case 2:
+            ((array[0] & 0xFF) << 8) | (array[1] & 0xFF)
+            break
+        case 3:
+            ((array[0] & 0xFF) << 16) | ((array[1] & 0xFF) << 8) | (array[2] & 0xFF)
+            break
+        case 4:
+            ((array[0] & 0xFF) << 24) | ((array[1] & 0xFF) << 16) | ((array[2] & 0xFF) << 8) | (array[3] & 0xFF)
+            break
+    }
+}
+
+def integer2Cmd(value, size) {
+    switch(size) {
+        case 1:
+            [value]
+            break
+        case 2:
+            def short value1   = value & 0xFF
+            def short value2 = (value >> 8) & 0xFF
+            [value2, value1]
+            break
+        case 3:
+            def short value1   = value & 0xFF
+            def short value2 = (value >> 8) & 0xFF
+            def short value3 = (value >> 16) & 0xFF
+            [value3, value2, value1]
+            break
+        case 4:
+            def short value1 = value & 0xFF
+            def short value2 = (value >> 8) & 0xFF
+            def short value3 = (value >> 16) & 0xFF
+            def short value4 = (value >> 24) & 0xFF
+            [value4, value3, value2, value1]
+            break
+    }
+}
+
+private command(hubitat.zwave.Command cmd) {
+    if (state.sec) {
+        zwave.securityV1.securityMessageEncapsulation().encapsulate(cmd).format()
+    } else {
+        cmd.format()
+    }
+}
+
+private commands(commands, delay=400) {
+    delayBetween(commands.collect{ command(it) }, delay)
+}
+
+def zwaveEvent(hubitat.zwave.commands.crc16encapv1.Crc16Encap cmd) {
+    def versions = [0x31: 5, 0x30: 1, 0x9C: 1, 0x70: 2, 0x85: 2]
+    def version = versions[cmd.commandClass as Integer]
+    def ccObj = version ? zwave.commandClass(cmd.commandClass, version) : zwave.commandClass(cmd.commandClass)
+    def encapsulatedCommand = ccObj?.command(cmd.command)?.parse(cmd.data)
+    if (encapsulatedCommand) {
+        zwaveEvent(encapsulatedCommand)
+    }
+}
+
+private channelNumber(String dni) {
+   // dni[-1..-1] //as int
+    dni.split("-ep")[-1] as int
+}
+
+
+private void createChildDevices() {
+    state.oldLabel = device.label
+    String thisId = device.id
+    try {
+        for (i in 1..10) {
+           /* addChildDevice("Haseman RS-10PM2 Child Device", "${device.deviceNetworkId}-ep${i}", null,
+                    [completedSetup: true, label: "${device.displayName} (S${i})",
+                     isComponent: false, componentName: "ep$i", componentLabel: "Switch $i"]) */
+            
+            addChildDevice("Z-Wave", "Haseman RS-10PM2 Child Device", "${thisId}-ep${i}", [name: "${device.displayName} (S${i})", isComponent: true])
+        }
+    } catch (e) {
+        runIn(2, "sendAlert")
+    }
+}
+
+private sendAlert() {
+    sendEvent(
+            descriptionText: "Child device creation failed. Please make sure that the \"Haseman RS-10PM2 Child Device\" is installed and published.",
+            eventType: "ALERT",
+            name: "childDeviceCreation",
+            value: "failed",
+            displayed: true,
+    )
+}
+
+def logsOff(){
+    log.warn "debug logging disabled..."
+    device.updateSetting("debugOutput",[value:"false",type:"bool"])
+}
+
+def configuration_model()
+{
+
+}
